@@ -1,0 +1,10 @@
+Value Chassis (\S+)
+Value Model (.*)
+Value Software (.*)
+Value Image ([^"]*)
+
+Start
+  ^Force10 Application Software Version: ${Software}
+  ^Chassis Type: ${Chassis} -> Continue
+  ^Chassis Type: ${Model}
+  ^System image file is "${Image}"

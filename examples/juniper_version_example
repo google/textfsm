@@ -1,0 +1,10 @@
+Hostname: router.abc
+Model: mx960
+JUNOS Base OS boot [9.1S3.5]
+JUNOS Base OS Software Suite [9.1S3.5]
+JUNOS Kernel Software Suite [9.1S3.5]
+JUNOS Crypto Software Suite [9.1S3.5]
+JUNOS Packet Forwarding Engine Support (M/T Common) [9.1S3.5]
+JUNOS Packet Forwarding Engine Support (MX Common) [9.1S3.5]
+JUNOS Online Documentation [9.1S3.5]
+JUNOS Routing Software Suite [9.1S3.5]
