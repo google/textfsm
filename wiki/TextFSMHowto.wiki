@@ -1,14 +1,14 @@
-#summary How to use the TextFSM module
+#summary How to use the TextFSM module.
 
 = Introduction =
 
-!TextFSM is a Python module that implements a template based state machine for parsing semi-formatted text. Originally developed to allow programmatic access to information given by the output of CLI driven devices, such as network routers and switches, it can however be used for any such textual output.
+TextFSM is a Python module that implements a template based state machine for parsing semi-formatted text. Originally developed to allow programmatic access to information given by the output of CLI driven devices, such as network routers and switches, it can however be used for any such textual output.
 
 The engine takes two inputs - a template file, and text input (such as command responses from the CLI of a device) and returns a list of records that contains the data parsed from the text.
 
 A template file is needed for each uniquely structured text input. Some examples are provided with the code and users are encouraged to develop their own.
 
-By developing a pool of template files, scripts can call !textFSM to parse useful information from a variety of sources. It is also possible to use different templates on the same data, in order to create different tables (or views).
+By developing a pool of template files, scripts can call textFSM to parse useful information from a variety of sources. It is also possible to use different templates on the same data, in order to create different tables (or views).
 
 = Details =
 
