@@ -1,0 +1,16 @@
+# Carry down the local end information so that it is present on each row item.
+Value Filldown RouterID (\S+)
+Value Filldown LocalAS (\d+)
+Value RemoteAS (\d+)
+Value Required RemoteIP (\d+(\.\d+){3})
+Value Uptime (\d+\S+)
+Value Received_V4 (\d+)
+Value Status (\D.*)
+
+Start
+  ^BGP router identifier ${RouterID}, local AS number ${LocalAS}
+  ^${RemoteIP}\s+\d+\s+${RemoteAS}(\s+\S+){5}\s+${Uptime}\s+${Received_V4} -> Record
+  ^${RemoteIP}\s+\d+\s+${RemoteAS}(\s+\S+){5}\s+${Uptime}\s+${Status} -> Record
+
+# Last record is already recorded then skip doing so here.
+EOF

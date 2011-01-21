@@ -1,0 +1,25 @@
+Force10 Networks Real Time Operating System Software
+Force10 Operating System Version: 1.0
+Force10 Application Software Version: 7.7.1.1
+Copyright (c) 1999-2008 by Force10 Networks, Inc.
+Build Time: Fri Sep 12 14:08:26 PDT 2008
+Build Path: /sites/sjc/work/sw/build/special_build/Release/E7-7-1/SW/SRC
+router.abc uptime is 3 day(s), 2 hour(s), 3 minute(s)
+
+System image file is "flash://FTOS-EF-7.7.1.1.bin"
+
+Chassis Type: E1200
+Control Processor: IBM PowerPC 750FX (Rev D2.2) with 536870912 bytes of memory.
+Route Processor 1: IBM PowerPC 750FX (Rev D2.2) with 1073741824 bytes of memory.
+Route Processor 2: IBM PowerPC 750FX (Rev D2.2) with 1073741824 bytes of memory.
+
+128K bytes of non-volatile configuration memory.
+
+  1 Route Processor Module
+  9 Switch Fabric Module
+  1 48-port GE line card with SFP optics (EF)
+  7 4-port 10GE LAN/WAN PHY line card with XFP optics (EF)
+  1 FastEthernet/IEEE 802.3 interface(s)
+ 48 GigabitEthernet/IEEE 802.3 interface(s)
+ 28 Ten GigabitEthernet/IEEE 802.3 interface(s)
+

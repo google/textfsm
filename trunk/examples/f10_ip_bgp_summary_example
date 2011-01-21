@@ -1,0 +1,16 @@
+BGP router identifier 192.0.2.1, local AS number 65551
+BGP table version is 173711, main routing table version 173711
+255 network entrie(s) using 43260 bytes of memory
+1114 paths using 75752 bytes of memory
+BGP-RIB over all using 76866 bytes of memory
+23 BGP path attribute entrie(s) using 1472 bytes of memory
+3 BGP AS-PATH entrie(s) using 137 bytes of memory
+10 BGP community entrie(s) using 498 bytes of memory
+2 BGP route-reflector cluster entrie(s) using 62 bytes of memory
+6 neighbor(s) using 28128 bytes of memory
+
+Neighbor        AS            MsgRcvd  MsgSent     TblVer  InQ  OutQ Up/Down  State/Pfx
+
+10.10.10.10     65551             647      397      73711    0   (0) 10:37:12         5
+10.10.100.1     65552             664      416      73711    0   (0) 10:38:27         0
+10.100.10.9     65553             709      526      73711    0   (0) 07:55:38         1

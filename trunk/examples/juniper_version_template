@@ -1,0 +1,21 @@
+Value Chassis (\S+)
+Value Required Model (\S+)
+Value Boot (.*)
+Value Base (.*)
+Value Kernel (.*)
+Value Crypto (.*)
+Value Documentation (.*)
+Value Routing (.*)
+
+Start
+# Support multiple chassis systems.
+  ^\S+:$$ -> Continue.Record
+  ^${Chassis}:$$
+  ^Model: ${Model}
+  ^JUNOS Base OS boot \[${Boot}\]
+  ^JUNOS Software Release \[${Base}\]
+  ^JUNOS Base OS Software Suite \[${Base}\]
+  ^JUNOS Kernel Software Suite \[${Kernel}\]
+  ^JUNOS Crypto Software Suite \[${Crypto}\]
+  ^JUNOS Online Documentation \[${Documentation}\]
+  ^JUNOS Routing Software Suite \[${Routing}\]
