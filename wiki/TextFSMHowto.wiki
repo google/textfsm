@@ -17,7 +17,8 @@ By developing a pool of template files, scripts can call textFSM to parse useful
 The quick-start example:
 
 {{{
-# Run text through the FSM.
+# Run text through the FSM. 
+# The arguments 'template' and 'raw_text_data' are file handles.
 re_table = textfsm.TextFSM(template)
 re_table.ParseText(raw_text_data)
 
@@ -27,6 +28,11 @@ re_table.ParseText(raw_text_data)
 # Each row of the table.
 for row in re_table:
   ', '.join(line)
+}}}
+
+The library is executable directly and can be used to check the syntax of a template and compare input with expected output.
+{{{
+textfm.py [--help] template [input_file [output_file]]
 }}}
 
 == Data representation ==
