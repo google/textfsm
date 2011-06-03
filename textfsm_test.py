@@ -690,6 +690,18 @@ State1
     result = t.ParseText(data)
     self.failUnlessEqual(str(result), "[['f'], ['fo'], ['foo']]")
 
+  def testReEnteringState(sefl):
+    """Issue 2. TextFSM should leave file pointer at top of template file."""
+
+    tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> Next Stop\n\nStop\n  ^abc\n'
+    output_text = 'one\ntwo'
+    tmpl_file = cStringIO.StringIO(tplt)
+
+    t = textfsm.TextFSM(tmpl_file)
+    t.ParseText(output_text)
+    t = textfsm.TextFSM(tmpl_file)
+    t.ParseText(output_text)
+
 
 if __name__ == '__main__':
   unittest.main()

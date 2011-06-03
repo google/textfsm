@@ -522,7 +522,11 @@ class TextFSM(object):
     self._cur_state_name = None
 
     # Read and parse FSM definition.
-    self._Parse(template)
+    # Restore the file pointer once done.
+    try:
+      self._Parse(template)
+    finally:
+      template.seek(0)
 
     # Initialise starting data.
     self.Reset()
