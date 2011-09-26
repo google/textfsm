@@ -702,6 +702,29 @@ State1
     t = textfsm.TextFSM(tmpl_file)
     t.ParseText(output_text)
 
+  def testFillup(self):
+    """Fillup should work ok."""
+    tplt = """Value Required Col1 ([^-]+)
+Value Fillup Col2 ([^-]+)
+Value Fillup Col3 ([^-]+)
+
+Start
+  ^$Col1 -- -- -> Record
+  ^$Col1 $Col2 -- -> Record
+  ^$Col1 -- $Col3 -> Record
+  ^$Col1 $Col2 $Col3 -> Record
+"""
+    data = """
+1 -- B1
+2 A2 --
+3 -- B3
+"""
+    t = textfsm.TextFSM(cStringIO.StringIO(tplt))
+    result = t.ParseText(data)
+    self.failUnlessEqual(
+        "[['1', 'A2', 'B1'], ['2', 'A2', 'B3'], ['3', '', 'B3']]",
+        str(result))
+
 
 if __name__ == '__main__':
   unittest.main()
