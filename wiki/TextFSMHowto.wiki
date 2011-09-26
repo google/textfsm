@@ -140,7 +140,7 @@ Each Value line is of the following format:
 
 || *Keyword* || *Type* || *Description* ||
 || *Value* || Keyword || Indicates that this is a Value line entry, mandatory. ||
-|| _option_ || Flags, comma separated (no spaces) || Extra options regarding the value. May be one or more of: <p/>*Filldown* The previously matched value is retained for subsequent records (unless explicitly cleared or matched again). In other words, the most recently matched value is copied to newer rows unless matched again.<p/> *Required* The record (row) is only saved into the table if this value is matched.<p/> *List* The value is a list, appended to on each match. Normally a match will overwrite any previous value in that row. ||
+|| _option_ || Flags, comma separated (no spaces) || Extra options regarding the value. May be one or more of: <p/>*Filldown* The previously matched value is retained for subsequent records (unless explicitly cleared or matched again). In other words, the most recently matched value is copied to newer rows unless matched again.<p/> *Required* The record (row) is only saved into the table if this value is matched.<p/> *List* The value is a list, appended to on each match. Normally a match will overwrite any previous value in that row.<p/> *Fillup* Like Filldown, but populates upwards until it finds a non-empty entry. Not compatible with Required. ||
 || _name_ || Value name || The name of the Value, which will end up as the column name. Must not be the name of a valid option. ||
 || _regex_ || A regex || The regex against which the Value will match. This regex must be contained within parenthesis. ||
 
