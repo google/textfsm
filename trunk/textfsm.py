@@ -146,6 +146,23 @@ class TextFSMOptions(object):
     def OnClearAllVar(self):
       self._myvar = None
 
+  class Fillup(OptionBase):
+    """Like Filldown, but upwards until it finds a non-empty entry."""
+
+    def OnAssignVar(self):
+      # If value is set, copy up the results table, until we
+      # see a set item.
+      if self.value.value:
+        # Get index of relevant result column.
+        value_idx = self.value.fsm.values.index(self.value)
+        # Go up the list from the end until we see a filled value.
+        for result in reversed(self.value.fsm._result):
+          if result[value_idx]:
+            # Stop when a record has this column already.
+            break
+          # Otherwise set the column value.
+          result[value_idx] = self.value.value
+
   class List(OptionBase):
     """Value takes the form of a list."""
 
