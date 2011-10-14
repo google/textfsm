@@ -571,8 +571,17 @@ State1
     t = textfsm.TextFSM(cStringIO.StringIO(tplt))
     self.failUnlessRaises(textfsm.TextFSMError, t.ParseText, data)
 
+  def testKey(self):
+    tplt = ('Value Required boo (on.)\n'
+            'Value Required,Key hoo (on.)\n\n'
+            'Start\n  ^$boo -> Continue\n  ^$hoo -> Record')
+
+    t = textfsm.TextFSM(cStringIO.StringIO(tplt))
+    self.failUnless('Key' in t._GetValue('hoo').OptionNames())
+    self.failUnless('Key' not in t._GetValue('boo').OptionNames())
+
   def testList(self):
-    # Tests 'List'
+
     tplt = ('Value List boo (on.)\n'
             'Value hoo (tw.)\n\n'
             'Start\n  ^$boo\n  ^$hoo -> Next.Record\n\n'
