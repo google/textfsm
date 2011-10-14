@@ -163,6 +163,9 @@ class TextFSMOptions(object):
           # Otherwise set the column value.
           result[value_idx] = self.value.value
 
+  class Key(OptionBase):
+    """Value constitutes part of the Key of the record."""
+
   class List(OptionBase):
     """Value takes the form of a list."""
 
