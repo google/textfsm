@@ -1,0 +1,11 @@
+# First line is header fields for columns
+# Regular expressions are supported in all fields except the first.
+# Last field supports variable length command completion.
+# abc[[xyz]] is expended to abc(x(y(z)?)?)?, regexp inside [[]] i not supported
+#
+# Column out of order
+Hostname, Template, Vendor, Command
+#
+clitable_templateA:clitable_templateB, .*, VendorA, sh[[ow]] ve[[rsion]]
+clitable_templateC, .*, VendorB, sh[[ow]] ve[[rsion]]
+clitable_templateD, .*, VendorA, sh[[ow]] in[[terfaces]]

@@ -1,0 +1,6 @@
+Value Col1 (d)
+Value Col2 (.)
+Value Col3 (.)
+
+Start
+  ^${Col1} ${Col2} ${Col3} -> Record
