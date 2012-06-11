@@ -313,11 +313,19 @@ class TextTable(object):
   def __add__(self, other):
     """Merges two with identical columns."""
 
-    new_table = TextTable()
-    new_table = copy.deepcopy(self)
+    new_table = copy.copy(self)
     for row in other:
       new_table.Append(row)
 
+    return new_table
+
+  def __copy__(self):
+    """Copy table instance."""
+
+    new_table = self.__class__()
+    new_table._table = [self.header]
+    for row in self[1:]:
+      new_table.Append(row)
     return new_table
 
   # pylint: disable-msg=C6409
