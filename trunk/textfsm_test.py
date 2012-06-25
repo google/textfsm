@@ -684,6 +684,31 @@ State1
     result = t.ParseText(data, eof=False)
     self.failUnlessEqual(str(result), '[]')
 
+  def testEnd(self):
+
+    # End State, EOF is skipped.
+    tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> End\n  ^$boo -> Record\n'
+    t = textfsm.TextFSM(cStringIO.StringIO(tplt))
+    data = 'Matching text A\nMatching text B'
+
+    result = t.ParseText(data)
+    self.failUnlessEqual(str(result), "[]")
+
+    # End State, with explicit Record.
+    tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> Record End\n'
+    t = textfsm.TextFSM(cStringIO.StringIO(tplt))
+
+    result = t.ParseText(data)
+    self.failUnlessEqual(str(result), "[['Matching text A']]")
+
+    # EOF state transition is followed by implicit End State.
+    tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> EOF\n  ^$boo -> Record\n'
+    t = textfsm.TextFSM(cStringIO.StringIO(tplt))
+
+    result = t.ParseText(data)
+    self.failUnlessEqual(str(result), "[['Matching text A']]")
+
+
   def testInvalidRegexp(self):
 
     tplt = 'Value boo (.$*)\n\nStart\n  ^$boo -> Next\n'
