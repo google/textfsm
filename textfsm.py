@@ -370,7 +370,7 @@ class TextFSMRule(object):
     regex_obj: Compiled regex for which the rule matches.
     line_num: Integer row number of Value.
   """
-  # Implicit default is '(regexp) -> Next.NoRecord Current'
+  # Implicit default is '(regexp) -> Next.NoRecord'
   MATCH_ACTION = re.compile('(?P<match>.*)(\s->(?P<action>.*))')
 
   # The structure to the right of the '->'.
@@ -407,9 +407,9 @@ class TextFSMRule(object):
     self.match = ''
     self.regex = ''
     self.regex_obj = None
-    self.line_op = ''              # Equivalent to 'Next'
-    self.record_op = ''            # Equivalent to 'NoRecord'
-    self.new_state = ''            # Equivalent to 'Current'
+    self.line_op = ''              # Equivalent to 'Next'.
+    self.record_op = ''            # Equivalent to 'NoRecord'.
+    self.new_state = ''            # Equivalent to current state.
     self.line_num = line_num
 
     line = line.strip()
@@ -474,8 +474,7 @@ class TextFSMRule(object):
     # Only 'Next' (or implicit 'Next') line operator can have a new_state.
     # But we allow error to have one as a warning message so we are left
     # checking that Continue does not.
-    if (self.line_op == 'Continue' and
-        self.new_state and self.new_state != 'Current'):
+    if (self.line_op == 'Continue' and self.new_state):
       raise TextFSMTemplateError(
           "Action '%s' with new state %s specified. Line: %s."
           % (self.line_op, self.new_state, self.line_num))
@@ -820,7 +819,7 @@ class TextFSM(object):
         if rule.line_op == 'Error':
           continue
 
-        if not rule.new_state or rule.new_state in ('Current', 'End'):
+        if not rule.new_state or rule.new_state in ('End', 'EOF'):
           continue
 
         if rule.new_state not in self.states:
@@ -853,8 +852,10 @@ class TextFSM(object):
 
     for line in lines:
       self._CheckLine(line)
+      if self._cur_state_name in ('End', 'EOF'):
+        break
 
-    if 'EOF' not in self.states and eof:
+    if self._cur_state_name != 'End' and 'EOF' not in self.states and eof:
       # Implicit EOF performs Next.Record operation.
       # Suppressed if Null EOF state is instantiated.
       self._AppendRecord()
@@ -873,17 +874,14 @@ class TextFSM(object):
         for value in matched.groupdict():
           self._AssignVar(matched, value)
 
-        # State transition.
-        if (rule.line_op != 'Error' and rule.new_state
-            and rule.new_state != 'Current'):
-          if rule.new_state in ('End', 'EOF'):
-            return self._result
-
-          self._cur_state = self.states[rule.new_state]
-          self._cur_state_name = rule.new_state
-
         if self._Operations(rule):
+          # Not a Continue so check for state transition.
+          if rule.new_state:
+            if rule.new_state not in ('End', 'EOF'):
+              self._cur_state = self.states[rule.new_state]
+            self._cur_state_name = rule.new_state
           break
+
 
   def _CheckRule(self, rule, line):
     """Check a line against the given rule.
