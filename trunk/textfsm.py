@@ -25,7 +25,7 @@ parse a specific type of text input, returning a record of values
 for each input entity.
 """
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 import getopt
 import inspect
