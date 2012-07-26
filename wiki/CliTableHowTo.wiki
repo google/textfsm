@@ -32,7 +32,7 @@ The templates are defined in the first column and the CLI command is defined in 
 
 In our example there have been defined two optional columns for the attributes (meta data) *Hostname* and *Vendor*.
 
-== Using CliTable ==
+== Using the library ==
 
 {{{
 import clitable
@@ -50,4 +50,3 @@ cli_table.ParseCmd(raw_cmd_data2, attributes={'Command': 'show version' , 'Vendo
 print cli_table
 
 }}}
-
