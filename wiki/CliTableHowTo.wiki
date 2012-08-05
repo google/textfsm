@@ -41,12 +41,44 @@ import clitable
 raw_cmd_data1 = open('examples/cisco_version_example').read()
 raw_cmd_data2 = open('examples/f10_version_example').read()
 
+# Initialise CliTable with the content of the 'index' file.
 cli_table = clitable.CliTable('index', 'examples')
 
-cli_table.ParseCmd(raw_cmd_data1, attributes={'Command': 'show version' , 'Vendor': 'Cisco'})
-print cli_table
+# Firstly we will use attributes to match a 'show version' command on a Cisco device.
+attributes = {'Command': 'show version' , 'Vendor': 'Cisco'}
 
-cli_table.ParseCmd(raw_cmd_data2, attributes={'Command': 'show version' , 'Vendor': 'Force10'})
+cli_table.ParseCmd(raw_cmd_data1, attributes)
 print cli_table
+>>> Model, Memory, ConfigRegister, Uptime, Version, ReloadReason, ReloadTime, ImageFile
+>>> WS-C4948-10GE, 262144K, 0x2102, 3 days, 13 hours, 53 minutes, 12.2(31)SGA1, reload, 05:09:09 PDT Wed Apr 2 2008, bootflash:cat4500-entservicesk9-mz.122-31.SGA1.bin
 
+# This time, the same command but on a Force10.
+attributes['Vendor'] = 'Force10'
+
+cli_table.ParseCmd(raw_cmd_data2, attributes)
+print cli_table
+>>> Chassis, Model, Software, Image
+>>> E1200, E1200, 7.7.1.1, flash://FTOS-EF-7.7.1.1.bin
+}}}
+
+CliTables with identical column names can be added together.
+
+{{{
+ct = cli_table + cli_table
+print ct
+>>> Chassis, Model, Software, Image
+>>> E1200, E1200, 7.7.1.1, flash://FTOS-EF-7.7.1.1.bin
+>>> E1200, E1200, 7.7.1.1, flash://FTOS-EF-7.7.1.1.bin
+}}}
+
+CliTables are built upon a TextTable object, and can use all the features in that class.
+
+{{{
+ct.Append(('E1200', 'E1200', '7.7.2.2', 'flash://FTOS-EF-7.7.2.2.bin'))
+print ct.FormattedTable()
+>>>  Chassis  Model  Software  Image                       
+>>> =======================================================
+>>>  E1200    E1200  7.7.1.1   flash://FTOS-EF-7.7.1.1.bin 
+>>>  E1200    E1200  7.7.1.1   flash://FTOS-EF-7.7.1.1.bin 
+>>>  E1200    E1200  7.7.2.2   flash://FTOS-EF-7.7.2.2.bin 
 }}}
