@@ -61,7 +61,7 @@ print cli_table
 >>> E1200, E1200, 7.7.1.1, flash://FTOS-EF-7.7.1.1.bin
 }}}
 
-The command column uses the special *[[ ]]* syntax for variable length command completion.
+The command column in the index file uses the special *[[ ]]* syntax for variable length command completion.
 {{{
 # Incomplete command strings are supported.
 attributes['Command'] = 'sh vers'
