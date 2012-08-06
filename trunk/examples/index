@@ -1,0 +1,14 @@
+
+# First line is the header fields for columns and is mandatory.
+# Regular expressions are supported in all fields except the first.
+# Last field supports variable length command completion.
+# abc[[xyz]] is expanded to abc(x(y(z)?)?)?, regexp inside [[]] is not supported
+#
+Template, Hostname, Vendor, Command
+cisco_bgp_summary_template, .*, Cisco, sh[[ow]] ip bg[[p]] su[[mmary]]
+cisco_version_template, .*, Cisco, sh[[ow]] ve[[rsion]]
+f10_ip_bgp_summary_template, .*, Force10, sh[[ow]] ip bg[[p]] sum[[mary]]
+f10_version_template, .*, Force10, sh[[ow]] ve[[rsion]]
+juniper_bgp_summary_template, .*,  Juniper, sh[[ow]] bg[[p]] su[[mmary]]
+juniper_version_template, .*, Juniper, sh[[ow]] ve[[rsion]]
+unix_ifcfg_template, hostname[abc].*, .*, ifconfig
