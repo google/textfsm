@@ -5,6 +5,7 @@ setup.py
 textfsm.py
 texttable.py
 clitable.py
+examples/index
 examples/cisco_bgp_summary_example
 examples/cisco_bgp_summary_template
 examples/cisco_version_example
