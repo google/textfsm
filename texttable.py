@@ -584,7 +584,7 @@ class TextTable(object):
     return result
 
   def FormattedTable(self, width=80, force_display=False, ml_delimiter=True,
-                     color=True, display_header=True):
+                     color=True, display_header=True, columns=None):
     """Returns whole table, with whitespace padding and row delimiters.
 
     Args:
@@ -595,6 +595,7 @@ class TextTable(object):
           delimiter.
       color: A bool. If true, display any colours in row.colour.
       display_header: A bool. If true, display header.
+      columns: A list of str, show only columns with these names.
 
     Returns:
       A string.  The tabled output.
@@ -603,6 +604,12 @@ class TextTable(object):
       TableError: Width too narrow to display table.
     """
 
+    def _FilteredCols():
+      """Returns list of column names to display."""
+      if not columns:
+        return self._Header().values
+      return [col for col in self._Header().values if col in columns]
+
     # Largest is the biggest data entry in a column.
     largest = {}
     # Smallest is the same as above but with linewrap i.e. largest unbroken
@@ -610,7 +617,7 @@ class TextTable(object):
     smallest = {}
     # largest == smallest for a column with a single word of data.
     # Initialise largest and smallest for all columns.
-    for key in self._Header():
+    for key in _FilteredCols():
       largest[key] = 0
       smallest[key] = 0
 
@@ -619,6 +626,8 @@ class TextTable(object):
     # pylint: disable-msg=E1103
     for row in self._table:
       for key, value in row.items():
+        if key not in _FilteredCols():
+          continue
         # Convert lists into a string.
         if isinstance(value, list):
           value = ', '.join(value)
@@ -632,7 +641,7 @@ class TextTable(object):
     # Bump up the size of each column to include minimum pad.
     # Find all columns that can be wrapped (multi-line).
     # And the minimum width needed to display all columns (even if wrapped).
-    for key in self._Header():
+    for key in _FilteredCols():
       # Each column is bracketed by a space on both sides.
       # So increase size required accordingly.
       largest[key] += 2
@@ -695,7 +704,7 @@ class TextTable(object):
     # Format the header lines and add to result_dict.
     # Find what the total width will be and use this for the ruled lines.
     # Find how many rows are needed for the most wrapped line (row_count).
-    for key in self._Header():
+    for key in _FilteredCols():
       result_dict[key] = self._TextJustify(key, smallest[key])
       if len(result_dict[key]) > row_count:
         row_count = len(result_dict[key])
@@ -704,7 +713,7 @@ class TextTable(object):
     # Store header in header_list, working down the wrapped rows.
     header_list = []
     for row_idx in xrange(row_count):
-      for key in self._Header():
+      for key in _FilteredCols():
         try:
           header_list.append(result_dict[key][row_idx])
         except IndexError:
@@ -722,6 +731,8 @@ class TextTable(object):
     for row in self:
       row_count = 0
       for key, value in row.items():
+        if key not in _FilteredCols():
+          continue
         # Convert field contents to a string.
         if isinstance(value, list):
           value = ', '.join(value)
@@ -741,7 +752,7 @@ class TextTable(object):
 
       row_list = []
       for row_idx in xrange(row_count):
-        for key in self._Header():
+        for key in _FilteredCols():
           try:
             row_list.append(result_dict[key][row_idx])
           except IndexError:

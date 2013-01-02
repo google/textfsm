@@ -671,6 +671,16 @@ a,b, c, d  # Trim comment
         ' DeviceA  lo0.16384  up     up    inet   127.0.0.1            \n',
         t.FormattedTable(62))
 
+    # Test with specific columns only
+    self.failUnlessEqual(
+        ' Host     Interface  Admin  Oper  Address                 \n'
+        '==========================================================\n'
+        ' DeviceA  lo0        up     up                            \n'
+        '\033[31m DeviceA  lo0.0      up     up    127.0.0.1, 10.100.100.1 \033[0m\n'
+        ' DeviceA  lo0.16384  up     up    127.0.0.1               \n',
+        t.FormattedTable(62, columns=['Host', 'Interface', 'Admin', 'Oper', 'Address']))
+
+
   def testSortTable(self):
     def Maketable():
       t = texttable.TextTable()
