@@ -24,7 +24,7 @@ re_table.ParseText(raw_text_data)
 
 # Display result as CSV
 # First the column headers
-', '.join(re_tale.header)
+', '.join(re_table.header)
 # Each row of the table.
 for row in re_table:
   ', '.join(line)
