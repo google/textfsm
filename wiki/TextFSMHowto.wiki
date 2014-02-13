@@ -20,14 +20,14 @@ The quick-start example:
 # Run text through the FSM. 
 # The argument 'template' is a file handle and 'raw_text_data' is a string.
 re_table = textfsm.TextFSM(template)
-re_table.ParseText(raw_text_data)
+data = re_table.ParseText(raw_text_data)
 
 # Display result as CSV
 # First the column headers
 ', '.join(re_table.header)
 # Each row of the table.
-for row in re_table:
-  ', '.join(line)
+for row in data:
+  ', '.join(row)
 }}}
 
 The library is executable directly and can be used to check the syntax of a template and compare input with expected output.
