@@ -31,5 +31,5 @@ setup(name='textfsm',
           'License :: OSI Approved :: Apache Software License',
           'Operating System :: OS Independent',
           'Topic :: Software Development :: Libraries'],
-      requires=['terminal'],
+      requires=['terminal', 'six'],
       py_modules=['clitable', 'textfsm', 'copyable_regex_object', 'texttable'])
