@@ -1,0 +1,18 @@
+Value Required Interface ([^:]+)
+Value MTU (\d+)
+Value State ((in)?active)
+Value MAC ([\d\w:]+)
+Value List Inet ([\d\.]+)
+Value List Netmask (\S+)
+# Don't match interface local (fe80::/10) - achieved with excluding '%'.
+Value List Inet6 ([^%]+)
+Value List Prefix (\d+)
+
+Start
+  # Record interface record (if we have one).
+  ^\S+:.* -> Continue.Record
+  # Collect data for new interface.
+  ^${Interface}:.* mtu ${MTU}
+  ^\s+ether ${MAC}
+  ^\s+inet6 ${Inet6} prefixlen ${Prefix}
+  ^\s+inet ${Inet} netmask ${Netmask}

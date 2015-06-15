@@ -1,0 +1,5 @@
+Value Key Col1 (.)
+Value Col4 (.)
+
+Start
+  ^${Col1} ${Col4} -> Record
