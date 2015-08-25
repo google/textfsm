@@ -342,8 +342,9 @@ class TextTable(object):
     Raises:
       TableError: When an invalid row entry is Append()'d
     """
+    flat = lambda x: x if isinstance(x, str) else ''.join([flat(y) for y in x])
     if function is None:
-      function = lambda row: bool(sum([len(v) for v in row.values]))
+      function = lambda row: bool(flat(row.values))
 
     new_table = self.__class__()
     new_table._table = [self.header]
