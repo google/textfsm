@@ -150,6 +150,25 @@ class UnitTestTextTable(unittest.TestCase):
     t.Append(('10', '20', '30'))
     return t
 
+  def testFilter(self):
+    old_table = self._BasicTable()
+    filtered_table = old_table.Filter(
+        function=lambda row: row['a'] == '10')
+    self.assertEqual(1, filtered_table.size)
+
+  def testFilterNone(self):
+    t = texttable.TextTable()
+    t.header = ('a', 'b', 'c')
+    t.Append(('', '', []))
+    filtered_table = t.Filter()
+    self.assertEqual(0, filtered_table.size)
+
+  def testMap(self):
+    old_table = self._BasicTable()
+    filtered_table = old_table.Map(
+        function=lambda row: row['a'] == '10' and row)
+    self.assertEqual(1, filtered_table.size)
+
   def testCustomRow(self):
     table = texttable.TextTable()
     table.header = ('a', 'b', 'c')
@@ -269,7 +288,7 @@ a,b, c, d  # Trim comment
     f = StringIO.StringIO(buf)
     t = texttable.TextTable()
     self.failUnlessEqual(2, t.CsvToTable(f))
-    # pylint: disable-msg=E1101
+    # pylint: disable=E1101
     self.failUnlessEqual(['a', 'b', 'c', 'd'], t.header.values)
     self.failUnlessEqual(['1', '2', '3', '4'], t[1].values)
     self.failUnlessEqual(['5', '6', '7', '8'], t[2].values)
@@ -333,7 +352,7 @@ a,b, c, d  # Trim comment
   def testAddColumn(self):
     t = self._BasicTable()
     t.AddColumn('Beer')
-    # pylint: disable-msg=E1101
+    # pylint: disable=E1101
     self.failUnlessEqual(['a', 'b', 'c', 'Beer'], t.header.values)
     self.failUnlessEqual(['10', '20', '30', ''], t[2].values)
 
@@ -354,7 +373,7 @@ a,b, c, d  # Trim comment
     t = self._BasicTable()
     t2 = self._BasicTable()
     t3 = t + t2
-    # pylint: disable-msg=E1101
+    # pylint: disable=E1101
     self.failUnlessEqual(['a', 'b', 'c'], t3.header.values)
     self.failUnlessEqual(['10', '20', '30'], t3[2].values)
     self.failUnlessEqual(['10', '20', '30'], t3[4].values)
@@ -370,7 +389,7 @@ a,b, c, d  # Trim comment
     t = self._BasicTable()
     # Explicit key, use first column.
     t.extend(t2, ('a',))
-    # pylint: disable-msg=E1101
+    # pylint: disable=E1101
     self.failUnlessEqual(['a', 'b', 'c', 'Beer'], t.header.values)
     # Only new columns have updated values.
     self.failUnlessEqual(['1', '2', '3', 'Lager'], t[1].values)
@@ -380,7 +399,7 @@ a,b, c, d  # Trim comment
     # row with the same key in the first table 't'.
     self.failUnlessEqual(2, t.size)
 
-    # pylint: disable-msg=E1101
+    # pylint: disable=E1101
     t = self._BasicTable()
     # If a Key is non-unique (which is a soft-error), then the first instance
     # on the RHS is used for and applied to all non-unique entries on the LHS.
@@ -659,7 +678,7 @@ a,b, c, d  # Trim comment
     t.Append(('DeviceA', 'lo0.16384', 'up', 'up', 'inet', ['127.0.0.1']))
     t[-2].color = ['red']
 
-    # pylint: disable-msg=C6310
+    # pylint: disable=C6310
     self.failUnlessEqual(
         ' Host     Interface  Admin  Oper  Proto  Address              \n'
         '==============================================================\n'
@@ -711,7 +730,7 @@ a,b, c, d  # Trim comment
     self.assertEqual(['duis', 'aute', 'irure'], table[2].values)
 
     # Test with custom compare
-    # pylint: disable-msg=C6409
+    # pylint: disable=C6409
     def compare(a, b):
       # Compare from 2nd char of 1st col
       return cmp(a[0][1:], b[0][1:])

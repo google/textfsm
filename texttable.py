@@ -111,7 +111,7 @@ class Row(dict):
   def __repr__(self):
     return '%s(%r)' % (self.__class__.__name__, str(self))
 
-  def index(self, column):  # pylint: disable-msg=C6409
+  def index(self, column):  # pylint: disable=C6409
     """Fetches the column number (0 indexed).
 
     Args:
@@ -328,8 +328,53 @@ class TextTable(object):
       new_table.Append(row)
     return new_table
 
-  # pylint: disable-msg=C6409
-  # pylint: disable-msg=W0622
+  def Filter(self, function=None):
+    """Construct Textable from the rows of which the function returns true.
+
+
+    Args:
+      function: A function applied to each row which returns a bool. If
+                function is None, all rows with empty column values are
+                removed.
+    Returns:
+      A new TextTable()
+
+    Raises:
+      TableError: When an invalid row entry is Append()'d
+    """
+    if function is None:
+      function = lambda row: bool(sum([len(v) for v in row.values]))
+
+    new_table = self.__class__()
+    new_table._table = [self.header]
+    for row in self:
+      if function(row) is True:
+        new_table.Append(row)
+    return new_table
+
+  def Map(self, function):
+    """Applies the function to every row in the table.
+
+    Args:
+      function: A function applied to each row.
+
+    Returns:
+      A new TextTable()
+
+    Raises:
+      TableError: When transform is not invalid row entry. The transform
+                  must be compatible with Append().
+    """
+    new_table = self.__class__()
+    new_table._table = [self.header]
+    for row in self:
+      filtered_row = function(row)
+      if filtered_row:
+        new_table.Append(filtered_row)
+    return new_table
+
+  # pylint: disable=C6409
+  # pylint: disable=W0622
   def sort(self, cmp=None, key=None, reverse=False):
     """Sorts rows in the texttable.
 
@@ -360,7 +405,7 @@ class TextTable(object):
     # Re-write the 'row' attribute of each row
     for index, row in enumerate(self._table):
       row.row = index
-  # pylint: enable-msg=W0622
+  # pylint: enable=W0622
 
   def extend(self, table, keys=None):
     """Extends all rows in the texttable.
@@ -407,7 +452,7 @@ class TextTable(object):
             row1[column] = row2[column]
           break
 
-  # pylint: enable-msg=C6409
+  # pylint: enable=C6409
   def Remove(self, row):
     """Removes a row from the table.
 
@@ -421,7 +466,7 @@ class TextTable(object):
     if row == 0 or row > self.size:
       raise TableError('Attempt to remove header row')
     new_table = []
-    # pylint: disable-msg=E1103
+    # pylint: disable=E1103
     for t_row in self._table:
       if t_row.row != row:
         new_table.append(t_row)
@@ -514,7 +559,7 @@ class TextTable(object):
     if not isinstance(table, TextTable):
       raise TypeError('Not an instance of TextTable.')
     self.Reset()
-    self._table = copy.deepcopy(table._table)   # pylint: disable-msg=W0212
+    self._table = copy.deepcopy(table._table)   # pylint: disable=W0212
     # Point parent table of each row back ourselves.
     for row in self:
       row.table = self
@@ -623,7 +668,7 @@ class TextTable(object):
 
     # Find the largest and smallest values.
     # Include Title line in equation.
-    # pylint: disable-msg=E1103
+    # pylint: disable=E1103
     for row in self._table:
       for key, value in row.items():
         if key not in _FilteredCols():
@@ -971,7 +1016,7 @@ class TextTable(object):
 
     return self.size
 
-  def index(self, name=None):  # pylint: disable-msg=C6409
+  def index(self, name=None):  # pylint: disable=C6409
     """Returns index number of supplied column name.
 
     Args:
