@@ -68,7 +68,7 @@ class Row(dict):
     Raises:
       IndexError: The given column(s) were not found.
     """
-    if isinstance(column, list) or isinstance(column, tuple):
+    if isinstance(column, (list, tuple)):
       ret = []
       for col in column:
         ret.append(self[col])
@@ -76,7 +76,7 @@ class Row(dict):
     # Perhaps we have a range like '1', ':-1' or '1:'.
     try:
       return self._values[column]
-    except TypeError:
+    except (IndexError, TypeError):
       pass
     for i in xrange(len(self._keys)):
       if self._keys[i] == column:
@@ -110,6 +110,32 @@ class Row(dict):
 
   def __repr__(self):
     return '%s(%r)' % (self.__class__.__name__, str(self))
+
+  def get(self, column, default_value=None):
+    """Get an item from the Row by column name.
+
+    Args:
+      column: Tuple of column names, or a (str) column name, or positional
+        column number, 0-indexed.
+      default_value: The value to use if the key is not found.
+
+    Returns:
+      A list or string with column value(s) or default_value if not found.
+    """
+    if isinstance(column, (list, tuple)):
+      ret = []
+      for col in column:
+        ret.append(self.get(col, default_value))
+      return ret
+    # Perhaps we have a range like '1', ':-1' or '1:'.
+    try:
+      return self._values[column]
+    except (IndexError, TypeError):
+      pass
+    try:
+      return self[column]
+    except IndexError:
+      return default_value
 
   def index(self, column):  # pylint: disable=C6409
     """Fetches the column number (0 indexed).

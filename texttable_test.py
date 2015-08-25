@@ -50,6 +50,20 @@ class UnitTestRow(unittest.TestCase):
     self.failUnlessEqual('one', row[0])
     self.failUnlessEqual(['two', 'three'], row[1:])
 
+    # Test "get".
+    self.failUnlessEqual('one', row.get('a'))
+    self.failUnlessEqual('one', row.get('a', 'four'))
+    self.failUnlessEqual('four', row.get('d', 'four'))
+    self.assertIsNone(row.get('d'))
+
+    self.failUnlessEqual(['one', 'three'], row.get(('a', 'c'), 'four'))
+    self.failUnlessEqual(['one', 'four'], row.get(('a', 'd'), 'four'))
+    self.failUnlessEqual(['one', None], row.get(('a', 'd')))
+
+    self.failUnlessEqual('one', row.get(0, 'four'))
+    self.failUnlessEqual('four', row.get(3, 'four'))
+    self.assertIsNone(row.get(3))
+
     # Change existing column value.
     row['b'] = 'Two'
     self.failUnlessEqual('Two', row['b'])
