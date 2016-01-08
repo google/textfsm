@@ -54,6 +54,13 @@ class Row(dict):
     self.row = None
     self.table = None
     self._color = None
+    self._index = {}
+
+  def _BuildIndex(self):
+    """Recreate the key index."""
+    self._index = {}
+    for i, k in enumerate(self._keys):
+      self._index[k] = i
 
   def __getitem__(self, column):
     """Support for [] notation.
@@ -73,14 +80,18 @@ class Row(dict):
       for col in column:
         ret.append(self[col])
       return ret
+
+    try:
+      return self._values[self._index[column]]
+    except (KeyError, TypeError, ValueError):
+      pass
+
     # Perhaps we have a range like '1', ':-1' or '1:'.
     try:
       return self._values[column]
     except (IndexError, TypeError):
       pass
-    for i in xrange(len(self._keys)):
-      if self._keys[i] == column:
-        return self._values[i]
+
     raise IndexError('No such column "%s" in row.' % column)
 
   def __contains__(self, value):
@@ -94,6 +105,7 @@ class Row(dict):
     # No column found, add a new one.
     self._keys.append(column)
     self._values.append(value)
+    self._BuildIndex()
 
   def __iter__(self):
     return iter(self._values)
@@ -177,6 +189,7 @@ class Row(dict):
       for _ in xrange(len(values)):
         self._values.append(None)
     self._keys = list(values)
+    self._BuildIndex()
 
   def _SetColour(self, value_list):
     """Sets row's colour attributes to a list of values in terminal.SGR."""
@@ -269,6 +282,7 @@ class Row(dict):
     self._keys = new_row.header
     self._values = new_row.values
     del new_row
+    self._BuildIndex()
 
   color = property(_GetColour, _SetColour, doc='Colour spec of this row')
   header = property(_GetHeader, _SetHeader, doc="List of row's headers.")

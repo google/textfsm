@@ -29,6 +29,7 @@ class UnitTestRow(unittest.TestCase):
     self.row = texttable.Row()
     self.row._keys = ['a', 'b', 'c']
     self.row._values = ['1', '2', '3']
+    self.row._BuildIndex()
 
   def testRowBasicMethods(self):
     row = texttable.Row()
@@ -712,7 +713,6 @@ a,b, c, d  # Trim comment
         '\033[31m DeviceA  lo0.0      up     up    127.0.0.1, 10.100.100.1 \033[0m\n'
         ' DeviceA  lo0.16384  up     up    127.0.0.1               \n',
         t.FormattedTable(62, columns=['Host', 'Interface', 'Admin', 'Oper', 'Address']))
-
 
   def testSortTable(self):
     def Maketable():
