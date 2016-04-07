@@ -23,7 +23,7 @@ from six import StringIO
 import unittest
 # http://python-mock.sourceforge.net/
 
-import textfsm
+import jtextfsm as textfsm
 
 
 class UnitTestFSM(unittest.TestCase):

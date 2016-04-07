@@ -14,16 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from distutils.core import setup
+from setuptools import setup
 
 import textfsm
 
 
-setup(name='textfsm',
-      maintainer='Google',
+setup(name='jtextfsm',
+      maintainer='Google; Jonathan Slenders',
       maintainer_email='textfsm-dev@googlegroups.com',
       version=textfsm.__version__,
-      url='https://code.google.com/p/textfsm/',
+      url='https://github.com/jonathanslenders/textfsm',
       license='Apache License, Version 2.0',
       classifiers=[
           'Development Status :: 5 - Production/Stable',
@@ -32,4 +32,4 @@ setup(name='textfsm',
           'Operating System :: OS Independent',
           'Topic :: Software Development :: Libraries'],
       requires=['six'],
-      py_modules=['textfsm'])
+      py_modules=['jtextfsm'])
