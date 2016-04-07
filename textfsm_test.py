@@ -251,7 +251,6 @@ class UnitTestFSM(unittest.TestCase):
     buf = '# Headline\nStart\n  ^.\n\n'
     f = StringIO(buf)
     t._ParseFSMState(f)
-    self.assertRaises(t.states['Start'])
     self.assertEqual(str(t.states['Start'][0]), '  ^.')
     try:
       _ = t.states['Start'][1]
@@ -577,8 +576,8 @@ State1
             'Start\n  ^$boo -> Continue\n  ^$hoo -> Record')
 
     t = textfsm.TextFSM(StringIO(tplt))
-    self.assertRaises('Key' in t._GetValue('hoo').OptionNames())
-    self.assertRaises('Key' not in t._GetValue('boo').OptionNames())
+    self.assertTrue('Key' in t._GetValue('hoo').OptionNames())
+    self.assertTrue('Key' not in t._GetValue('boo').OptionNames())
 
   def testList(self):
 
