@@ -1,0 +1,53 @@
+Dialer0 is up, line protocol is up
+  IPv6 is enabled, link-local address is FE80::21B:2BFF:FECE:4EE3 
+  No Virtual link-local address(es):
+  Description: PPP Dialer
+  Stateless address autoconfig enabled
+  General-prefix in use for addressing
+  Global unicast address(es):
+    2001:4567:1212:B2:21B:2BFF:FECE:4EE3, subnet is 2001:4567:1212:B2::/64 [EUI/CAL/PRE]
+      valid lifetime 5041 preferred lifetime 5041
+    2001:4567:1111:56FF::1, subnet is 2001:4567:1111:56FF::1/128 [CAL/PRE]
+      valid lifetime 5945 preferred lifetime 2344
+  Joined group address(es):
+    FF02::1
+    FF02::2
+    FF02::1:FF00:1
+    FF02::1:FFCE:4EE3
+  MTU is 1500 bytes
+  ICMP error messages limited to one every 100 milliseconds
+  ICMP redirects are enabled
+  ICMP unreachables are sent
+  Input features: Access List
+  Inbound access list IPV6-IN
+  ND DAD is enabled, number of DAD attempts: 1
+  ND reachable time is 30000 milliseconds (using 21397)
+  Hosts use stateless autoconfig for addresses.
+Vlan1 is up, line protocol is up
+  IPv6 is enabled, link-local address is FE80::21B:2BFF:FECE:4EE3 
+  No Virtual link-local address(es):
+  Description: Local VLAN
+  General-prefix in use for addressing
+  Global unicast address(es):
+    2001:4567:1212:5600::1, subnet is 2001:4567:1212:5600::/64 [CAL/PRE]
+      valid lifetime 5943 preferred lifetime 2342
+  Joined group address(es):
+    FF02::1
+    FF02::2
+    FF02::1:2
+    FF02::1:FF00:1
+    FF02::1:FFCE:4EE3
+    FF05::1:3
+  MTU is 1500 bytes
+  ICMP error messages limited to one every 100 milliseconds
+  ICMP redirects are enabled
+  ICMP unreachables are sent
+  ND DAD is enabled, number of DAD attempts: 1
+  ND reachable time is 30000 milliseconds (using 26371)
+  ND advertised reachable time is 0 (unspecified)
+  ND advertised retransmit interval is 0 (unspecified)
+  ND router advertisements are sent every 200 seconds
+  ND router advertisements live for 1800 seconds
+  ND advertised default router preference is Medium
+  Hosts use stateless autoconfig for addresses.
+  Hosts use DHCP to obtain other configuration.

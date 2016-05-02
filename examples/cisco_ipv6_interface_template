@@ -1,0 +1,27 @@
+Value Interface (\S+)
+Value Admin (\S+)
+Value Oper (\S+)
+Value Description (.*)
+Value LinkLocal (\S+)
+Value List Addresses (\S+)
+Value List Subnets (\S+)
+Value List GroupAddresses (\S+)
+Value Mtu (\d+)
+
+Start
+  ^${Interface} is ${Admin}, line protocol is ${Oper}
+  ^.*link-local address is ${LinkLocal}
+  ^  Description: ${Description}
+  ^  Global unicast address -> Unicast
+  ^  Joined group address -> Multicast
+  ^  MTU is ${Mtu} bytes -> Record
+
+Unicast
+  ^    ${Addresses}, subnet is ${Subnets}
+  ^  Joined group address -> Multicast
+  ^  \S -> Start
+
+Multicast
+  ^    ${GroupAddresses}
+  ^  MTU is ${Mtu} bytes -> Record
+  ^  \S -> Start
