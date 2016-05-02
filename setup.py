@@ -32,4 +32,5 @@ setup(name='textfsm',
           'Operating System :: OS Independent',
           'Topic :: Software Development :: Libraries'],
       requires=['terminal'],
-      py_modules=['clitable', 'textfsm', 'copyable_regex_object', 'texttable'])
+      py_modules=['clitable', 'textfsm', 'copyable_regex_object',
+                  'texttable', 'terminal'])
