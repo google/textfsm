@@ -31,5 +31,4 @@ setup(name='jtextfsm',
           'License :: OSI Approved :: Apache Software License',
           'Operating System :: OS Independent',
           'Topic :: Software Development :: Libraries'],
-      requires=['six'],
       py_modules=['jtextfsm'])
