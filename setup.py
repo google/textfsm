@@ -33,5 +33,4 @@ setup(name='jtextfsm',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
           'Topic :: Software Development :: Libraries'],
-      requires=['six'],
       py_modules=['jtextfsm'])
