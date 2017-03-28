@@ -19,7 +19,7 @@ from setuptools import setup
 import textfsm
 
 
-setup(name='jtextfsm',
+setup(name='textfsm',
       maintainer='Google; Jonathan Slenders',
       maintainer_email='textfsm-dev@googlegroups.com',
       version=textfsm.__version__,

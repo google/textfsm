@@ -588,7 +588,7 @@ class TextFSM(object):
       try:
         header.append(value.Header())
       except SkipValue:
-          continue
+        continue
     return header
 
   def _GetValue(self, name):
