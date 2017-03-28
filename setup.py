@@ -16,14 +16,14 @@
 
 from setuptools import setup
 
-import jtextfsm
+import textfsm
 
 
 setup(name='jtextfsm',
       maintainer='Google; Jonathan Slenders',
       maintainer_email='textfsm-dev@googlegroups.com',
-      version=jtextfsm.__version__,
-      url='https://github.com/jonathanslenders/textfsm',
+      version=textfsm.__version__,
+      url='https://code.google.com/p/textfsm/',
       license='Apache License, Version 2.0',
       classifiers=[
           'Development Status :: 5 - Production/Stable',
@@ -33,4 +33,6 @@ setup(name='jtextfsm',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
           'Topic :: Software Development :: Libraries'],
-      py_modules=['jtextfsm'])
+      requires=['terminal'],
+      py_modules=['clitable', 'textfsm', 'copyable_regex_object',
+                  'texttable', 'terminal'])
