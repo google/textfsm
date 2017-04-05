@@ -20,7 +20,7 @@ import textfsm
 
 
 setup(name='textfsm',
-      maintainer='Google; Jonathan Slenders',
+      maintainer='Google',
       maintainer_email='textfsm-dev@googlegroups.com',
       version=textfsm.__version__,
       url='https://code.google.com/p/textfsm/',
