@@ -16,10 +16,15 @@
 
 """Unittest for text table."""
 
-import StringIO
+from six.moves import StringIO, range
+
 import unittest
 import terminal
 import texttable
+
+
+def cmp(a, b):
+    return (a > b) - (a < b)
 
 
 class UnitTestRow(unittest.TestCase):
@@ -39,117 +44,117 @@ class UnitTestRow(unittest.TestCase):
     row['c'] = 'three'
 
     # Access a single column (__getitem__).
-    self.failUnlessEqual('one', row['a'])
-    self.failUnlessEqual('two', row['b'])
-    self.failUnlessEqual('three', row['c'])
+    self.assertEqual('one', row['a'])
+    self.assertEqual('two', row['b'])
+    self.assertEqual('three', row['c'])
 
     # Access multiple columns (__getitem__).
-    self.failUnlessEqual(['one', 'three'], row[('a', 'c')])
-    self.failUnlessEqual(['two', 'three'], row[('b', 'c')])
+    self.assertEqual(['one', 'three'], row[('a', 'c')])
+    self.assertEqual(['two', 'three'], row[('b', 'c')])
 
     # Access integer indexes (__getitem__).
-    self.failUnlessEqual('one', row[0])
-    self.failUnlessEqual(['two', 'three'], row[1:])
+    self.assertEqual('one', row[0])
+    self.assertEqual(['two', 'three'], row[1:])
 
     # Test "get".
-    self.failUnlessEqual('one', row.get('a'))
-    self.failUnlessEqual('one', row.get('a', 'four'))
-    self.failUnlessEqual('four', row.get('d', 'four'))
+    self.assertEqual('one', row.get('a'))
+    self.assertEqual('one', row.get('a', 'four'))
+    self.assertEqual('four', row.get('d', 'four'))
     self.assertIsNone(row.get('d'))
 
-    self.failUnlessEqual(['one', 'three'], row.get(('a', 'c'), 'four'))
-    self.failUnlessEqual(['one', 'four'], row.get(('a', 'd'), 'four'))
-    self.failUnlessEqual(['one', None], row.get(('a', 'd')))
+    self.assertEqual(['one', 'three'], row.get(('a', 'c'), 'four'))
+    self.assertEqual(['one', 'four'], row.get(('a', 'd'), 'four'))
+    self.assertEqual(['one', None], row.get(('a', 'd')))
 
-    self.failUnlessEqual('one', row.get(0, 'four'))
-    self.failUnlessEqual('four', row.get(3, 'four'))
+    self.assertEqual('one', row.get(0, 'four'))
+    self.assertEqual('four', row.get(3, 'four'))
     self.assertIsNone(row.get(3))
 
     # Change existing column value.
     row['b'] = 'Two'
-    self.failUnlessEqual('Two', row['b'])
+    self.assertEqual('Two', row['b'])
 
     # Length.
-    self.failUnlessEqual(3, len(row))
+    self.assertEqual(3, len(row))
 
     # Contains.
-    self.failUnless(not 'two' in row)
-    self.failUnless('Two' in row)
+    self.assertTrue(not 'two' in row)
+    self.assertTrue('Two' in row)
 
     # Iteration.
-    self.failUnlessEqual(['one', 'Two', 'three'], list(row))
+    self.assertEqual(['one', 'Two', 'three'], list(row))
 
   def testRowPublicMethods(self):
     self.row.header = ('x', 'y', 'z')
     # Header should be set, values initialised to None.
-    self.failUnlessEqual(['x', 'y', 'z'], self.row.header)
-    self.failUnlessEqual(['1', '2', '3'], self.row.values)
+    self.assertEqual(['x', 'y', 'z'], self.row.header)
+    self.assertEqual(['1', '2', '3'], self.row.values)
     row = texttable.Row()
     row.header = ('x', 'y', 'z')
-    self.failUnlessEqual(['x', 'y', 'z'], row.header)
-    self.failUnlessEqual([None, None, None], row.values)
+    self.assertEqual(['x', 'y', 'z'], row.header)
+    self.assertEqual([None, None, None], row.values)
 
   def testSetValues(self):
     """Tests setting row values from 'From' method."""
 
     # Set values from Dict.
     self.row._SetValues({'a': 'seven', 'b': 'eight', 'c': 'nine'})
-    self.failUnlessEqual(['seven', 'eight', 'nine'], self.row._values)
+    self.assertEqual(['seven', 'eight', 'nine'], self.row._values)
     self.row._SetValues({'b': '8', 'a': '7', 'c': '9'})
-    self.failUnlessEqual(['7', '8', '9'], self.row._values)
+    self.assertEqual(['7', '8', '9'], self.row._values)
 
     # Converts integers to string equivalents.
     # Excess key/value pairs are ignored.
     self.row._SetValues({'a': 1, 'b': 2, 'c': 3, 'd': 4})
-    self.failUnlessEqual(['1', '2', '3'], self.row._values)
+    self.assertEqual(['1', '2', '3'], self.row._values)
 
     # Values can come from a list of equal length the the keys.
     self.row._SetValues((7, '8', 9))
-    self.failUnlessEqual(['7', '8', '9'], self.row._values)
+    self.assertEqual(['7', '8', '9'], self.row._values)
 
     # Or from a tuple of the same length.
     self.row._SetValues(('vb', 'coopers', 'squires'))
-    self.failUnlessEqual(['vb', 'coopers', 'squires'], self.row._values)
+    self.assertEqual(['vb', 'coopers', 'squires'], self.row._values)
 
     # Raise error if list length is incorrect.
-    self.failUnlessRaises(TypeError, self.row._SetValues,
+    self.assertRaises(TypeError, self.row._SetValues,
                           ['seven', 'eight', 'nine', 'ten'])
     # Raise error if row object has mismatched header.
     row = texttable.Row()
     self.row._keys = ['a']
     self.row._values = ['1']
-    self.failUnlessRaises(TypeError, self.row._SetValues, row)
+    self.assertRaises(TypeError, self.row._SetValues, row)
     # Raise error if assigning wrong data type.
-    self.failUnlessRaises(TypeError, row._SetValues, 'abc')
+    self.assertRaises(TypeError, row._SetValues, 'abc')
 
   def testHeader(self):
     """Tests value property."""
     self.row.header = ('x', 'y', 'z')
-    self.failUnlessEqual(['x', 'y', 'z'], self.row.header)
-    self.failUnlessRaises(ValueError, self.row._SetHeader, ('a', 'b', 'c', 'd'))
+    self.assertEqual(['x', 'y', 'z'], self.row.header)
+    self.assertRaises(ValueError, self.row._SetHeader, ('a', 'b', 'c', 'd'))
 
   def testValue(self):
     """Tests value property."""
     self.row.values = {'a': 'seven', 'b': 'eight', 'c': 'nine'}
-    self.failUnlessEqual(['seven', 'eight', 'nine'], self.row.values)
+    self.assertEqual(['seven', 'eight', 'nine'], self.row.values)
     self.row.values = (7, '8', 9)
-    self.failUnlessEqual(['7', '8', '9'], self.row.values)
+    self.assertEqual(['7', '8', '9'], self.row.values)
 
   def testIndex(self):
     """Tests Insert and Index methods."""
 
-    self.failUnlessEqual(1, self.row.index('b'))
-    self.failUnlessRaises(ValueError, self.row.index, 'bogus')
+    self.assertEqual(1, self.row.index('b'))
+    self.assertRaises(ValueError, self.row.index, 'bogus')
 
     # Insert element within row.
     self.row.Insert('black', 'white', 1)
     self.row.Insert('red', 'yellow', -1)
-    self.failUnlessEqual(['a', 'black', 'b', 'red', 'c'], self.row.header)
-    self.failUnlessEqual(['1', 'white', '2', 'yellow', '3'], self.row.values)
-    self.failUnlessEqual(1, self.row.index('black'))
-    self.failUnlessEqual(2, self.row.index('b'))
-    self.failUnlessRaises(IndexError, self.row.Insert, 'grey', 'gray', 6)
-    self.failUnlessRaises(IndexError, self.row.Insert, 'grey', 'gray', -7)
+    self.assertEqual(['a', 'black', 'b', 'red', 'c'], self.row.header)
+    self.assertEqual(['1', 'white', '2', 'yellow', '3'], self.row.values)
+    self.assertEqual(1, self.row.index('black'))
+    self.assertEqual(2, self.row.index('b'))
+    self.assertRaises(IndexError, self.row.Insert, 'grey', 'gray', 6)
+    self.assertRaises(IndexError, self.row.Insert, 'grey', 'gray', -7)
 
 
 class MyRow(texttable.Row):
@@ -187,107 +192,107 @@ class UnitTestTextTable(unittest.TestCase):
   def testCustomRow(self):
     table = texttable.TextTable()
     table.header = ('a', 'b', 'c')
-    self.failUnlessEqual(type(texttable.Row()), type(table[0]))
+    self.assertEqual(type(texttable.Row()), type(table[0]))
     table = texttable.TextTable(row_class=MyRow)
-    self.failUnlessEqual(MyRow, table.row_class)
+    self.assertEqual(MyRow, table.row_class)
     table.header = ('a', 'b', 'c')
-    self.failUnlessEqual(type(MyRow()), type(table[0]))
+    self.assertEqual(type(MyRow()), type(table[0]))
 
   def testTableRepr(self):
-    self.failUnlessEqual(
+    self.assertEqual(
         "TextTable('a, b, c\\n1, 2, 3\\n10, 20, 30\\n')",
         repr(self._BasicTable()))
 
   def testTableStr(self):
-    self.failUnlessEqual('a, b, c\n1, 2, 3\n10, 20, 30\n',
+    self.assertEqual('a, b, c\n1, 2, 3\n10, 20, 30\n',
                          self._BasicTable().__str__())
 
   def testTableSetRow(self):
     t = self._BasicTable()
     t.Append(('one', 'two', 'three'))
-    self.failUnlessEqual(['one', 'two', 'three'], t[3].values)
-    self.failUnlessEqual(3, t.size)
+    self.assertEqual(['one', 'two', 'three'], t[3].values)
+    self.assertEqual(3, t.size)
 
   def testTableRowTypes(self):
     t = self._BasicTable()
     t.Append(('one', ['two', None], None))
-    self.failUnlessEqual(['one', ['two', 'None'], 'None'], t[3].values)
-    self.failUnlessEqual(3, t.size)
+    self.assertEqual(['one', ['two', 'None'], 'None'], t[3].values)
+    self.assertEqual(3, t.size)
 
   def testTableRowDictWithInt(self):
     t = self._BasicTable()
     t.Append({'a': 1, 'b': 'two', 'c': 3})
-    self.failUnlessEqual(['1', 'two', '3'], t[3].values)
-    self.failUnlessEqual(3, t.size)
+    self.assertEqual(['1', 'two', '3'], t[3].values)
+    self.assertEqual(3, t.size)
 
   def testTableRowListWithInt(self):
     t = self._BasicTable()
     t.Append([1, 'two', 3])
-    self.failUnlessEqual(['1', 'two', '3'], t[3].values)
-    self.failUnlessEqual(3, t.size)
+    self.assertEqual(['1', 'two', '3'], t[3].values)
+    self.assertEqual(3, t.size)
 
   def testTableGetRow(self):
     t = self._BasicTable()
-    self.failUnlessEqual(['1', '2', '3'], t[1].values)
-    self.failUnlessEqual(['1', '3'], t[1][('a', 'c')])
-    self.failUnlessEqual('3', t[1][('c')])
-    for rnum in xrange(t.size):
-      self.failUnlessEqual(rnum, t[rnum].row)
+    self.assertEqual(['1', '2', '3'], t[1].values)
+    self.assertEqual(['1', '3'], t[1][('a', 'c')])
+    self.assertEqual('3', t[1][('c')])
+    for rnum in range(t.size):
+      self.assertEqual(rnum, t[rnum].row)
 
   def testTableRowWith(self):
     t = self._BasicTable()
-    self.failUnlessEqual(t.RowWith('a', '10'), t[2])
-    self.failUnlessRaises(IndexError, t.RowWith, 'g', '5')
+    self.assertEqual(t.RowWith('a', '10'), t[2])
+    self.assertRaises(IndexError, t.RowWith, 'g', '5')
 
   def testContains(self):
     t = self._BasicTable()
-    self.failUnless('a' in t)
-    self.failIf('x' in t)
+    self.assertTrue('a' in t)
+    self.assertFalse('x' in t)
 
   def testIteration(self):
     t = self._BasicTable()
     index = 0
     for r in t:
       index += 1
-      self.failUnlessEqual(r, t[index])
-      self.failUnlessEqual(index, r.table._iterator)
+      self.assertEqual(r, t[index])
+      self.assertEqual(index, r.table._iterator)
 
     # Have we iterated over all entries.
-    self.failUnlessEqual(index, t.size)
+    self.assertEqual(index, t.size)
     # The iterator count is reset.
-    self.failUnlessEqual(0, t._iterator)
+    self.assertEqual(0, t._iterator)
 
     # Can we iterate repeatedly.
     index = 0
     for r in t:
       index += 1
-      self.failUnlessEqual(r, t[index])
+      self.assertEqual(r, t[index])
 
     index1 = 0
     try:
       for r in t:
         index1 += 1
         index2 = 0
-        self.failUnlessEqual(index1, r.table._iterator)
+        self.assertEqual(index1, r.table._iterator)
         # Test nesting of iterations.
         for r2 in t:
           index2 += 1
-          self.failUnlessEqual(index2, r2.table._iterator)
+          self.assertEqual(index2, r2.table._iterator)
           # Preservation of outer iterator after 'break'.
           if index1 == 2 and index2 == 2:
             break
         if index1 == 2:
           # Restoration of initial iterator after exception.
           raise IndexError
-        self.failUnlessEqual(index1, r.table._iterator)
+        self.assertEqual(index1, r.table._iterator)
     except IndexError:
       pass
 
     # Have we iterated over all entries - twice.
-    self.failUnlessEqual(index, t.size)
-    self.failUnlessEqual(index2, t.size)
+    self.assertEqual(index, t.size)
+    self.assertEqual(index2, t.size)
     # The iterator count is reset.
-    self.failUnlessEqual(0, t._iterator)
+    self.assertEqual(0, t._iterator)
 
   def testCsvToTable(self):
     buf = """
@@ -300,99 +305,99 @@ a,b, c, d  # Trim comment
 10, 11
 # More comments.
 """
-    f = StringIO.StringIO(buf)
+    f = StringIO(buf)
     t = texttable.TextTable()
-    self.failUnlessEqual(2, t.CsvToTable(f))
+    self.assertEqual(2, t.CsvToTable(f))
     # pylint: disable=E1101
-    self.failUnlessEqual(['a', 'b', 'c', 'd'], t.header.values)
-    self.failUnlessEqual(['1', '2', '3', '4'], t[1].values)
-    self.failUnlessEqual(['5', '6', '7', '8'], t[2].values)
-    self.failUnlessEqual(2, t.size)
+    self.assertEqual(['a', 'b', 'c', 'd'], t.header.values)
+    self.assertEqual(['1', '2', '3', '4'], t[1].values)
+    self.assertEqual(['5', '6', '7', '8'], t[2].values)
+    self.assertEqual(2, t.size)
 
   def testHeaderIndex(self):
     t = self._BasicTable()
-    self.failUnlessEqual('c', t.header[2])
-    self.failUnlessEqual('a', t.header[0])
+    self.assertEqual('c', t.header[2])
+    self.assertEqual('a', t.header[0])
 
   def testAppend(self):
     t = self._BasicTable()
     t.Append(['10', '20', '30'])
-    self.failUnlessEqual(3, t.size)
-    self.failUnlessEqual(['10', '20', '30'], t[3].values)
+    self.assertEqual(3, t.size)
+    self.assertEqual(['10', '20', '30'], t[3].values)
 
     t.Append(('100', '200', '300'))
-    self.failUnlessEqual(4, t.size)
-    self.failUnlessEqual(['100', '200', '300'], t[4].values)
+    self.assertEqual(4, t.size)
+    self.assertEqual(['100', '200', '300'], t[4].values)
 
     t.Append(t[1])
-    self.failUnlessEqual(5, t.size)
-    self.failUnlessEqual(['1', '2', '3'], t[5].values)
+    self.assertEqual(5, t.size)
+    self.assertEqual(['1', '2', '3'], t[5].values)
 
     t.Append({'a': '11', 'b': '12', 'c': '13'})
-    self.failUnlessEqual(6, t.size)
-    self.failUnlessEqual(['11', '12', '13'], t[6].values)
+    self.assertEqual(6, t.size)
+    self.assertEqual(['11', '12', '13'], t[6].values)
 
     # The row index and container table should be set on new rows.
-    self.failUnlessEqual(6, t[6].row)
-    self.failUnlessEqual(t[1].table, t[6].table)
+    self.assertEqual(6, t[6].row)
+    self.assertEqual(t[1].table, t[6].table)
 
-    self.failUnlessRaises(TypeError, t.Append, ['20', '30'])
-    self.failUnlessRaises(TypeError, t.Append, ('1', '2', '3', '4'))
-    self.failUnlessRaises(TypeError, t.Append,
+    self.assertRaises(TypeError, t.Append, ['20', '30'])
+    self.assertRaises(TypeError, t.Append, ('1', '2', '3', '4'))
+    self.assertRaises(TypeError, t.Append,
                           {'a': '11', 'b': '12', 'd': '13'})
 
   def testDeleteRow(self):
     t = self._BasicTable()
-    self.failUnlessEqual(2, t.size)
+    self.assertEqual(2, t.size)
     t.Remove(1)
-    self.failUnlessEqual(['10', '20', '30'], t[1].values)
+    self.assertEqual(['10', '20', '30'], t[1].values)
     for row in t:
-      self.failUnlessEqual(row, t[row.row])
+      self.assertEqual(row, t[row.row])
     t.Remove(1)
-    self.failIf(t.size)
+    self.assertFalse(t.size)
 
   def testRowNumberandParent(self):
     t = self._BasicTable()
     t.Append(['10', '20', '30'])
     t.Remove(1)
     for rownum, row in enumerate(t, start=1):
-      self.failUnlessEqual(row.row, rownum)
-      self.failUnlessEqual(row.table, t)
+      self.assertEqual(row.row, rownum)
+      self.assertEqual(row.table, t)
     t2 = self._BasicTable()
     t.table = t2
     for rownum, row in enumerate(t, start=1):
-      self.failUnlessEqual(row.row, rownum)
-      self.failUnlessEqual(row.table, t)
+      self.assertEqual(row.row, rownum)
+      self.assertEqual(row.table, t)
 
   def testAddColumn(self):
     t = self._BasicTable()
     t.AddColumn('Beer')
     # pylint: disable=E1101
-    self.failUnlessEqual(['a', 'b', 'c', 'Beer'], t.header.values)
-    self.failUnlessEqual(['10', '20', '30', ''], t[2].values)
+    self.assertEqual(['a', 'b', 'c', 'Beer'], t.header.values)
+    self.assertEqual(['10', '20', '30', ''], t[2].values)
 
     t.AddColumn('Wine', default='Merlot', col_index=1)
-    self.failUnlessEqual(['a', 'Wine', 'b', 'c', 'Beer'], t.header.values)
-    self.failUnlessEqual(['10', 'Merlot', '20', '30', ''], t[2].values)
+    self.assertEqual(['a', 'Wine', 'b', 'c', 'Beer'], t.header.values)
+    self.assertEqual(['10', 'Merlot', '20', '30', ''], t[2].values)
 
     t.AddColumn('Spirits', col_index=-2)
-    self.failUnlessEqual(['a', 'Wine', 'b', 'Spirits', 'c', 'Beer'],
+    self.assertEqual(['a', 'Wine', 'b', 'Spirits', 'c', 'Beer'],
                          t.header.values)
-    self.failUnlessEqual(['10', 'Merlot', '20', '', '30', ''], t[2].values)
+    self.assertEqual(['10', 'Merlot', '20', '', '30', ''], t[2].values)
 
-    self.failUnlessRaises(IndexError, t.AddColumn, 'x', col_index=6)
-    self.failUnlessRaises(IndexError, t.AddColumn, 'x', col_index=-7)
-    self.failUnlessRaises(texttable.TableError, t.AddColumn, 'b')
+    self.assertRaises(IndexError, t.AddColumn, 'x', col_index=6)
+    self.assertRaises(IndexError, t.AddColumn, 'x', col_index=-7)
+    self.assertRaises(texttable.TableError, t.AddColumn, 'b')
 
   def testAddTable(self):
     t = self._BasicTable()
     t2 = self._BasicTable()
     t3 = t + t2
     # pylint: disable=E1101
-    self.failUnlessEqual(['a', 'b', 'c'], t3.header.values)
-    self.failUnlessEqual(['10', '20', '30'], t3[2].values)
-    self.failUnlessEqual(['10', '20', '30'], t3[4].values)
-    self.failUnlessEqual(4, t3.size)
+    self.assertEqual(['a', 'b', 'c'], t3.header.values)
+    self.assertEqual(['10', '20', '30'], t3[2].values)
+    self.assertEqual(['10', '20', '30'], t3[4].values)
+    self.assertEqual(4, t3.size)
 
   def testExtendTable(self):
     t2 = self._BasicTable()
@@ -405,14 +410,14 @@ a,b, c, d  # Trim comment
     # Explicit key, use first column.
     t.extend(t2, ('a',))
     # pylint: disable=E1101
-    self.failUnlessEqual(['a', 'b', 'c', 'Beer'], t.header.values)
+    self.assertEqual(['a', 'b', 'c', 'Beer'], t.header.values)
     # Only new columns have updated values.
-    self.failUnlessEqual(['1', '2', '3', 'Lager'], t[1].values)
+    self.assertEqual(['1', '2', '3', 'Lager'], t[1].values)
     # All rows are extended.
-    self.failUnlessEqual(['10', '20', '30', ''], t[2].values)
+    self.assertEqual(['10', '20', '30', ''], t[2].values)
     # The third row of 't2', is not included as there is no matching
     # row with the same key in the first table 't'.
-    self.failUnlessEqual(2, t.size)
+    self.assertEqual(2, t.size)
 
     # pylint: disable=E1101
     t = self._BasicTable()
@@ -421,20 +426,20 @@ a,b, c, d  # Trim comment
     t.Append(('1', '2b', '3b'))
     t2.Append(('1', 'two', '', 'Ale'))
     t.extend(t2, ('a',))
-    self.failUnlessEqual(['1', '2', '3', 'Lager'], t[1].values)
-    self.failUnlessEqual(['1', '2b', '3b', 'Lager'], t[3].values)
+    self.assertEqual(['1', '2', '3', 'Lager'], t[1].values)
+    self.assertEqual(['1', '2b', '3b', 'Lager'], t[3].values)
 
     t = self._BasicTable()
     # No explicit key, row number is used as the key.
     t.extend(t2)
-    self.failUnlessEqual(['a', 'b', 'c', 'Beer'], t.header.values)
+    self.assertEqual(['a', 'b', 'c', 'Beer'], t.header.values)
     # Since row is key we pick up new values from corresponding row number.
-    self.failUnlessEqual(['1', '2', '3', 'Lager'], t[1].values)
+    self.assertEqual(['1', '2', '3', 'Lager'], t[1].values)
     # All rows are still extended.
-    self.failUnlessEqual(['10', '20', '30', ''], t[2].values)
+    self.assertEqual(['10', '20', '30', ''], t[2].values)
     # The third/fourth row of 't2', is not included as there is no corresponding
     # row in the first table 't'.
-    self.failUnlessEqual(2, t.size)
+    self.assertEqual(2, t.size)
 
     t = self._BasicTable()
     t.Append(('1', 'two', '3'))
@@ -446,59 +451,59 @@ a,b, c, d  # Trim comment
     # Sometimes more than one row is needed to define a unique key (superkey).
     t.extend(t2, ('a', 'b'))
 
-    self.failUnlessEqual(['a', 'b', 'c', 'Beer'], t.header.values)
+    self.assertEqual(['a', 'b', 'c', 'Beer'], t.header.values)
     # key '1', '2' does not equal '1', 'two', so column unmatched.
-    self.failUnlessEqual(['1', '2', '3', ''], t[1].values)
+    self.assertEqual(['1', '2', '3', ''], t[1].values)
     # '1', 'two' matches but 'two', '1' does not as order is important.
-    self.failUnlessEqual(['1', 'two', '3', 'Stout'], t[3].values)
-    self.failUnlessEqual(['two', '1', 'three', ''], t[4].values)
-    self.failUnlessEqual(4, t.size)
+    self.assertEqual(['1', 'two', '3', 'Stout'], t[3].values)
+    self.assertEqual(['two', '1', 'three', ''], t[4].values)
+    self.assertEqual(4, t.size)
 
     # Expects a texttable as the argument.
-    self.failUnlessRaises(AttributeError, t.extend, ['a', 'list'])
+    self.assertRaises(AttributeError, t.extend, ['a', 'list'])
     # All Key column Names must be valid.
-    self.failUnlessRaises(IndexError, t.extend, ['a', 'list'], ('a', 'bogus'))
+    self.assertRaises(IndexError, t.extend, ['a', 'list'], ('a', 'bogus'))
 
   def testTableWithLabels(self):
     t = self._BasicTable()
-    self.failUnlessEqual(
+    self.assertEqual(
         '# LABEL a\n1.b 2\n1.c 3\n10.b 20\n10.c 30\n',
         t.LabelValueTable())
-    self.failUnlessEqual(
+    self.assertEqual(
         '# LABEL a\n1.b 2\n1.c 3\n10.b 20\n10.c 30\n',
         t.LabelValueTable(['a']))
-    self.failUnlessEqual(
+    self.assertEqual(
         '# LABEL a.c\n1.3.b 2\n10.30.b 20\n',
         t.LabelValueTable(['a', 'c']))
-    self.failUnlessEqual(
+    self.assertEqual(
         '# LABEL a.c\n1.3.b 2\n10.30.b 20\n',
         t.LabelValueTable(['c', 'a']))
-    self.failUnlessRaises(texttable.TableError, t.LabelValueTable, ['a', 'z'])
+    self.assertRaises(texttable.TableError, t.LabelValueTable, ['a', 'z'])
 
   def testTextJustify(self):
     t = texttable.TextTable()
-    self.failUnlessEqual([' a    '], t._TextJustify('a', 6))
-    self.failUnlessEqual([' a b  '], t._TextJustify('a b', 6))
-    self.failUnlessEqual([' a  b '], t._TextJustify('a  b', 6))
-    self.failUnlessEqual([' a ', ' b '], t._TextJustify('a b', 3))
-    self.failUnlessEqual([' a ', ' b '], t._TextJustify('a  b', 3))
-    self.failUnlessRaises(texttable.TableError, t._TextJustify, 'a', 2)
-    self.failUnlessRaises(texttable.TableError, t._TextJustify, 'a bb', 3)
-    self.failUnlessEqual([' a b  '], t._TextJustify('a\tb', 6))
-    self.failUnlessEqual([' a  b '], t._TextJustify('a\t\tb', 6))
-    self.failUnlessEqual([' a    ', ' b    '], t._TextJustify('a\nb\t', 6))
+    self.assertEqual([' a    '], t._TextJustify('a', 6))
+    self.assertEqual([' a b  '], t._TextJustify('a b', 6))
+    self.assertEqual([' a  b '], t._TextJustify('a  b', 6))
+    self.assertEqual([' a ', ' b '], t._TextJustify('a b', 3))
+    self.assertEqual([' a ', ' b '], t._TextJustify('a  b', 3))
+    self.assertRaises(texttable.TableError, t._TextJustify, 'a', 2)
+    self.assertRaises(texttable.TableError, t._TextJustify, 'a bb', 3)
+    self.assertEqual([' a b  '], t._TextJustify('a\tb', 6))
+    self.assertEqual([' a  b '], t._TextJustify('a\t\tb', 6))
+    self.assertEqual([' a    ', ' b    '], t._TextJustify('a\nb\t', 6))
 
   def testSmallestColSize(self):
     t = texttable.TextTable()
-    self.failUnlessEqual(1, t._SmallestColSize('a'))
-    self.failUnlessEqual(2, t._SmallestColSize('a bb'))
-    self.failUnlessEqual(4, t._SmallestColSize('a cccc bb'))
-    self.failUnlessEqual(0, t._SmallestColSize(''))
-    self.failUnlessEqual(1, t._SmallestColSize('a\tb'))
-    self.failUnlessEqual(1, t._SmallestColSize('a\nb\tc'))
-    self.failUnlessEqual(3, t._SmallestColSize('a\nbbb\n\nc'))
+    self.assertEqual(1, t._SmallestColSize('a'))
+    self.assertEqual(2, t._SmallestColSize('a bb'))
+    self.assertEqual(4, t._SmallestColSize('a cccc bb'))
+    self.assertEqual(0, t._SmallestColSize(''))
+    self.assertEqual(1, t._SmallestColSize('a\tb'))
+    self.assertEqual(1, t._SmallestColSize('a\nb\tc'))
+    self.assertEqual(3, t._SmallestColSize('a\nbbb\n\nc'))
     # Check if _SmallestColSize is not influenced by ANSI colors.
-    self.failUnlessEqual(
+    self.assertEqual(
         3, t._SmallestColSize('bbb ' + terminal.AnsiText('bb', ['red'])))
 
   def testFormattedTableColor(self):
@@ -509,12 +514,12 @@ a,b, c, d  # Trim comment
     for color_key in terminal.FG_COLOR_WORDS:
       t[0].color = terminal.FG_COLOR_WORDS[color_key]
       t.FormattedTable()
-      self.failUnlessEqual(sorted(t[0].color),
+      self.assertEqual(sorted(t[0].color),
                            sorted(terminal.FG_COLOR_WORDS[color_key]))
     for color_key in terminal.BG_COLOR_WORDS:
       t[0].color = terminal.BG_COLOR_WORDS[color_key]
       t.FormattedTable()
-      self.failUnlessEqual(sorted(t[0].color),
+      self.assertEqual(sorted(t[0].color),
                            sorted(terminal.BG_COLOR_WORDS[color_key]))
 
   def testFormattedTableColoredMultilineCells(self):
@@ -522,7 +527,7 @@ a,b, c, d  # Trim comment
     t.header = ('LSP', 'Name')
     t.Append((terminal.AnsiText('col1 boembabies', ['yellow']), 'col2'))
     t.Append(('col1', 'col2'))
-    self.failUnlessEqual(
+    self.assertEqual(
         ' LSP           Name \n'
         '====================\n'
         ' \033[33mcol1          col2 \n'
@@ -536,7 +541,7 @@ a,b, c, d  # Trim comment
     t.header = ('LSP', 'Name')
     t.Append((terminal.AnsiText('col1', ['yellow']), 'col2'))
     t.Append(('col1', 'col2'))
-    self.failUnlessEqual(
+    self.assertEqual(
         ' LSP   Name \n'
         '============\n'
         ' \033[33mcol1\033[0m  col2 \n'
@@ -548,14 +553,14 @@ a,b, c, d  # Trim comment
     t.header = (terminal.AnsiText('LSP', ['yellow']), 'Name')
     t.Append(('col1', 'col2'))
     t.Append(('col1', 'col2'))
-    self.failUnlessEqual(
+    self.assertEqual(
         ' \033[33mLSP\033[0m   Name \n'
         '============\n'
         ' col1  col2 \n'
         ' col1  col2 \n',
         t.FormattedTable())
 
-    self.failUnlessEqual(
+    self.assertEqual(
         ' col1  col2 \n'
         ' col1  col2 \n',
         t.FormattedTable(display_header=False))
@@ -563,7 +568,7 @@ a,b, c, d  # Trim comment
   def testFormattedTable(self):
     # Basic table has a single whitespace on each side of the max cell width.
     t = self._BasicTable()
-    self.failUnlessEqual(
+    self.assertEqual(
         ' a   b   c  \n'
         '============\n'
         ' 1   2   3  \n'
@@ -572,14 +577,14 @@ a,b, c, d  # Trim comment
 
     # An increase in a cell size (or header), increases the side of that column.
     t.AddColumn('Beer')
-    self.failUnlessEqual(
+    self.assertEqual(
         ' a   b   c   Beer \n'
         '==================\n'
         ' 1   2   3        \n'
         ' 10  20  30       \n',
         t.FormattedTable())
 
-    self.failUnlessEqual(
+    self.assertEqual(
         ' 1   2   3        \n'
         ' 10  20  30       \n',
         t.FormattedTable(display_header=False))
@@ -587,7 +592,7 @@ a,b, c, d  # Trim comment
     # Multiple words are on one line while space permits.
     t.Remove(1)
     t.Append(('', '', '', 'James Squire'))
-    self.failUnlessEqual(
+    self.assertEqual(
         ' a   b   c   Beer         \n'
         '==========================\n'
         ' 10  20  30               \n'
@@ -596,7 +601,7 @@ a,b, c, d  # Trim comment
 
     # Or split across rows if not enough space.
     # A '---' divider is inserted to give a delimiter for multiline data.
-    self.failUnlessEqual(
+    self.assertEqual(
         ' a   b   c   Beer   \n'
         '====================\n'
         ' 10  20  30         \n'
@@ -607,7 +612,7 @@ a,b, c, d  # Trim comment
 
     # Not needed below the data if last line, is needed otherwise.
     t.Append(('1', '2', '3', '4'))
-    self.failUnlessEqual(
+    self.assertEqual(
         ' a   b   c   Beer   \n'
         '====================\n'
         ' 10  20  30         \n'
@@ -621,7 +626,7 @@ a,b, c, d  # Trim comment
     # Multiple multi line columms.
     t.Remove(3)
     t.Append(('', 'A small essay with a longword here', '1', '2'))
-    self.failUnlessEqual(
+    self.assertEqual(
         ' a   b         c   Beer   \n'
         '==========================\n'
         ' 10  20        30         \n'
@@ -638,7 +643,7 @@ a,b, c, d  # Trim comment
 
     # Available space is added to multiline columns proportionaly
     # i.e. a column with twice as much text gets twice the space.
-    self.failUnlessEqual(
+    self.assertEqual(
         ' a   b            c   Beer   \n'
         '=============================\n'
         ' 10  20           30         \n'
@@ -654,14 +659,14 @@ a,b, c, d  # Trim comment
 
     # Display fails if the minimum size needed is not available.
     # These are both 1-char less than the minimum required.
-    self.failUnlessRaises(texttable.TableError, t.FormattedTable, 25)
+    self.assertRaises(texttable.TableError, t.FormattedTable, 25)
     t.Remove(3)
     t.Remove(2)
-    self.failUnlessRaises(texttable.TableError, t.FormattedTable, 17)
+    self.assertRaises(texttable.TableError, t.FormattedTable, 17)
     t.Append(('line\nwith\n\nbreaks', 'Line with\ttabs\t\t',
               'line with  lots of   spaces.', '4'))
     t[0].color = ['yellow']
-    self.failUnlessEqual(
+    self.assertEqual(
         '\033[33m a       b     c         Beer \n'
         '==============================\033[0m\n'
         ' 10      20    30             \n'
@@ -673,7 +678,7 @@ a,b, c, d  # Trim comment
         t.FormattedTable(30))
 
     t[0].color = None
-    self.failUnlessEqual(
+    self.assertEqual(
         ' a         b        c              Beer \n'
         '========================================\n'
         ' 10        20       30                  \n'
@@ -694,7 +699,7 @@ a,b, c, d  # Trim comment
     t[-2].color = ['red']
 
     # pylint: disable=C6310
-    self.failUnlessEqual(
+    self.assertEqual(
         ' Host     Interface  Admin  Oper  Proto  Address              \n'
         '==============================================================\n'
         ' DeviceA  lo0        up     up                                \n'
@@ -706,7 +711,7 @@ a,b, c, d  # Trim comment
         t.FormattedTable(62))
 
     # Test with specific columns only
-    self.failUnlessEqual(
+    self.assertEqual(
         ' Host     Interface  Admin  Oper  Address                 \n'
         '==========================================================\n'
         ' DeviceA  lo0        up     up                            \n'

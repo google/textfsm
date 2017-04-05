@@ -15,6 +15,8 @@
 #     limitations under the License.
 #
 
+from __future__ import print_function, unicode_literals
+
 """Simple terminal related routines."""
 
 __version__ = '0.1.1'
@@ -440,14 +442,14 @@ def main(argv=None):
 
   try:
     opts, args = getopt.getopt(argv[1:], 'dhs', ['nodelay', 'help', 'size'])
-  except getopt.error, msg:
+  except getopt.error as msg:
     raise Usage(msg)
 
   # Print usage and return, regardless of presence of other args.
   for opt, _ in opts:
     if opt in ('-h', '--help'):
-      print __doc__
-      print help_msg
+      print(__doc__)
+      print(help_msg)
       return 0
 
   isdelay = False
@@ -455,7 +457,7 @@ def main(argv=None):
     # Prints the size of the terminal and returns.
     # Mutually exclusive to the paging of text and overrides that behaviour.
     if opt in ('-s', '--size'):
-      print 'Length: %d, Width: %d' % TerminalSize()
+      print('Length: %d, Width: %d' % TerminalSize())
       return 0
     elif opt in ('-d', '--delay'):
       isdelay = True
@@ -474,7 +476,7 @@ if __name__ == '__main__':
   help_msg = '%s [--help] [--size] [--nodelay] [input_file]\n' % sys.argv[0]
   try:
     sys.exit(main())
-  except Usage, err:
-    print >>sys.stderr, err
-    print >>sys.stderr, 'For help use --help'
+  except Usage as err:
+    print(err, file=sys.stderr)
+    print('For help use --help', file=sys.stderr)
     sys.exit(2)

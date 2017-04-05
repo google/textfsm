@@ -23,6 +23,9 @@ Tables can be created from CSV input and in-turn supports a number of display
 formats such as CSV and variable sized and justified rows.
 """
 
+from six.moves import range
+from functools import cmp_to_key
+
 import copy
 import textwrap
 import terminal
@@ -98,7 +101,7 @@ class Row(dict):
     return value in self._values
 
   def __setitem__(self, column, value):
-    for i in xrange(len(self)):
+    for i in range(len(self)):
       if self._keys[i] == column:
         self._values[i] = value
         return
@@ -186,7 +189,7 @@ class Row(dict):
     if self._values and len(values) != len(self._values):
       raise ValueError('Header values not equal to existing data width.')
     if not self._values:
-      for _ in xrange(len(values)):
+      for _ in range(len(values)):
         self._values.append(None)
     self._keys = list(values)
     self._BuildIndex()
@@ -439,7 +442,12 @@ class TextTable(object):
     key = key or _DefaultKey
     # Exclude header by copying table.
     new_table = self._table[1:]
-    new_table.sort(cmp, key, reverse)
+
+    if cmp is not None:
+      key = cmp_to_key(cmp)
+
+    new_table.sort(key=key, reverse=reverse)
+
     # Regenerate the table with original header
     self._table = [self.header]
     self._table.extend(new_table)
@@ -798,7 +806,7 @@ class TextTable(object):
 
     # Store header in header_list, working down the wrapped rows.
     header_list = []
-    for row_idx in xrange(row_count):
+    for row_idx in range(row_count):
       for key in _FilteredCols():
         try:
           header_list.append(result_dict[key][row_idx])
@@ -837,7 +845,7 @@ class TextTable(object):
           prev_muli_line = False
 
       row_list = []
-      for row_idx in xrange(row_count):
+      for row_idx in range(row_count):
         for key in _FilteredCols():
           try:
             row_list.append(result_dict[key][row_idx])
@@ -952,11 +960,11 @@ class TextTable(object):
       raise TableError('Column %r already in table.' % column)
     if col_index == -1:
       self._table[0][column] = column
-      for i in xrange(1, len(self._table)):
+      for i in range(1, len(self._table)):
         self._table[i][column] = default
     else:
       self._table[0].Insert(column, column, col_index)
-      for i in xrange(1, len(self._table)):
+      for i in range(1, len(self._table)):
         self._table[i].Insert(column, default, col_index)
 
   def Append(self, new_values):
@@ -1044,8 +1052,8 @@ class TextTable(object):
       if not header:
         header_row = self.row_class()
         header_length = len(lst)
-        header_row.values = dict(zip(xrange(header_length),
-                                     xrange(header_length)))
+        header_row.values = dict(zip(range(header_length),
+                                     range(header_length)))
         self._table[0] = header_row
         header = True
         continue
