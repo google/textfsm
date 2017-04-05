@@ -15,7 +15,7 @@
 # permissions and limitations under the License.
 
 """Unittest for textfsm module."""
-from __future__ import print_function, unicode_literals
+from __future__ import print_function
 
 
 from six import StringIO

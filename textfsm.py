@@ -24,7 +24,7 @@ A simple template language is used to describe a state machine to
 parse a specific type of text input, returning a record of values
 for each input entity.
 """
-from __future__ import unicode_literals, print_function
+from __future__ import print_function
 
 __version__ = '0.3.1'
 
