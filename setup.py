@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from distutils.core import setup
+from setuptools import setup
 
 import textfsm
 
@@ -30,6 +30,8 @@ setup(name='textfsm',
           'Intended Audience :: Developers',
           'License :: OSI Approved :: Apache Software License',
           'Operating System :: OS Independent',
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 3',
           'Topic :: Software Development :: Libraries'],
       requires=['terminal'],
       py_modules=['clitable', 'textfsm', 'copyable_regex_object',
