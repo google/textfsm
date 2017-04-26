@@ -248,7 +248,8 @@ class Pager(object):
 
   The simplest usage:
 
-    s = open('file.txt').read()
+    with open('file.txt') as f:
+      s = f.read()
     Pager(s).Page()
 
   Particularly unique is the ability to sequentially feed new text into the
@@ -288,6 +289,11 @@ class Pager(object):
       self._tty = sys.stdin
     self.SetLines(None)
     self.Reset()
+
+  def __del__(self):
+    """Deconstructor, closes tty"""
+    if getattr(self, '_tty', sys.stdin) is not sys.stdin:
+        self._tty.close()
 
   def Reset(self):
     """Reset the pager to the top of the text."""
@@ -465,8 +471,10 @@ def main(argv=None):
       raise Usage('Invalid arguments.')
 
   # Page text supplied in either specified file or stdin.
+
   if len(args) == 1:
-    fd = open(args[0]).read()
+    with open(args[0]) as f:
+      fd = f.read()
   else:
     fd = sys.stdin.read()
   Pager(fd, delay=isdelay).Page()
