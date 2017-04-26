@@ -77,6 +77,28 @@ class IndexTable(object):
     """Returns number of rows in table."""
     return self.index.size
 
+  def __copy__(self):
+    """Returns a copy of an IndexTable object."""
+    clone = IndexTable()
+    if hasattr(self, '_index_file'):
+      clone._index_file = self._index_file
+      clone._index_handle = self._index_handle
+
+    clone.index = self.index
+    clone.compiled = self.compiled
+    return clone
+
+  def __deepcopy__(self, memodict={}):
+    """Returns a deepcopy of an IndexTable object."""
+    clone = IndexTable()
+    if hasattr(self, '_index_file'):
+      clone._index_file = copy.deepcopy(self._index_file)
+      clone._index_handle = open(clone._index_file, 'r')
+
+    clone.index = copy.deepcopy(self.index)
+    clone.compiled = copy.deepcopy(self.compiled)
+    return clone
+
   def _ParseIndex(self, preread, precompile):
     """Reads index file and stores entries in TextTable.
 
