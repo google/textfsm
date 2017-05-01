@@ -73,9 +73,36 @@ class IndexTable(object):
       self._index_handle = open(self._index_file, 'r')
       self._ParseIndex(preread, precompile)
 
+  def __del__(self):
+    """Close index handle."""
+    if hasattr(self, '_index_handle'):
+      self._index_handle.close()
+
   def __len__(self):
     """Returns number of rows in table."""
     return self.index.size
+
+  def __copy__(self):
+    """Returns a copy of an IndexTable object."""
+    clone = IndexTable()
+    if hasattr(self, '_index_file'):
+      clone._index_file = self._index_file
+      clone._index_handle = self._index_handle
+
+    clone.index = self.index
+    clone.compiled = self.compiled
+    return clone
+
+  def __deepcopy__(self, memodict={}):
+    """Returns a deepcopy of an IndexTable object."""
+    clone = IndexTable()
+    if hasattr(self, '_index_file'):
+      clone._index_file = copy.deepcopy(self._index_file)
+      clone._index_handle = open(clone._index_file, 'r')
+
+    clone.index = copy.deepcopy(self.index)
+    clone.compiled = copy.deepcopy(self.compiled)
+    return clone
 
   def _ParseIndex(self, preread, precompile):
     """Reads index file and stores entries in TextTable.
@@ -202,9 +229,14 @@ class CliTable(texttable.TextTable):
 
     template_list = template_str.split(':')
     template_files = []
-    for tmplt in template_list:
-      template_files.append(
-          open(os.path.join(self.template_dir, tmplt), 'r'))
+    try:
+      for tmplt in template_list:
+        template_files.append(
+            open(os.path.join(self.template_dir, tmplt), 'r'))
+    except:
+      for tmplt in template_files:
+        tmplt.close()
+      raise
 
     return template_files
 
@@ -235,15 +267,20 @@ class CliTable(texttable.TextTable):
                             attributes)
 
     template_files = self._TemplateNamesToFiles(templates)
-    # Re-initialise the table.
-    self.Reset()
-    self._keys = set()
-    self.table = self._ParseCmdItem(self.raw, template_file=template_files[0])
 
-    # Add additional columns from any additional tables.
-    for tmplt in template_files[1:]:
-      self.extend(self._ParseCmdItem(self.raw, template_file=tmplt),
-                  set(self._keys))
+    try:
+      # Re-initialise the table.
+      self.Reset()
+      self._keys = set()
+      self.table = self._ParseCmdItem(self.raw, template_file=template_files[0])
+
+      # Add additional columns from any additional tables.
+      for tmplt in template_files[1:]:
+        self.extend(self._ParseCmdItem(self.raw, template_file=tmplt),
+                    set(self._keys))
+    finally:
+      for f in template_files:
+        f.close()
 
   def _ParseCmdItem(self, cmd_input, template_file=None):
     """Creates Texttable with output of command.

@@ -26,7 +26,7 @@ for each input entity.
 """
 from __future__ import print_function
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 
 import getopt
 import inspect
@@ -1007,25 +1007,29 @@ def main(argv=None):
 
   # If we have an argument, parse content of file and display as a template.
   # Template displayed will match input template, minus any comment lines.
-  template = open(args[0], 'r')
-  fsm = TextFSM(template)
-  print('FSM Template:\n%s\n' % fsm)
+  with open(args[0], 'r') as template:
+    fsm = TextFSM(template)
+    print('FSM Template:\n%s\n' % fsm)
 
-  if len(args) > 1:
-    # Second argument is file with example cli input.
-    # Prints parsed tabular result.
-    cli_input = open(args[1], 'r').read()
-    table = fsm.ParseText(cli_input)
-    print('FSM Table:')
-    result = str(fsm.header) + '\n'
-    for line in table:
-      result += str(line) + '\n'
-    print(result, end='')
+    if len(args) > 1:
+      # Second argument is file with example cli input.
+      # Prints parsed tabular result.
+      with open(args[1], 'r') as f:
+        cli_input = f.read()
+
+      table = fsm.ParseText(cli_input)
+      print('FSM Table:')
+      result = str(fsm.header) + '\n'
+      for line in table:
+        result += str(line) + '\n'
+      print(result, end='')
 
   if len(args) > 2:
     # Compare tabular result with data in third file argument.
     # Exit value indicates if processed data matched expected result.
-    ref_table = open(args[2], 'r').read()
+    with open(args[2], 'r') as f:
+      ref_table = f.read()
+
     if ref_table != result:
       print('Data mis-match!')
       return 1
