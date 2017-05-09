@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python
 #
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
@@ -16,15 +16,19 @@
 
 """Unittest for text table."""
 
-from six.moves import StringIO, range
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import unittest
+# pylint: disable=redefined-builtin
+from six.moves import range
+from six.moves import StringIO
 import terminal
 import texttable
 
 
 def cmp(a, b):
-    return (a > b) - (a < b)
+  return (a > b) - (a < b)
 
 
 class UnitTestRow(unittest.TestCase):
@@ -78,7 +82,7 @@ class UnitTestRow(unittest.TestCase):
     self.assertEqual(3, len(row))
 
     # Contains.
-    self.assertTrue(not 'two' in row)
+    self.assertTrue('two' not in row)
     self.assertTrue('Two' in row)
 
     # Iteration.
@@ -118,7 +122,7 @@ class UnitTestRow(unittest.TestCase):
 
     # Raise error if list length is incorrect.
     self.assertRaises(TypeError, self.row._SetValues,
-                          ['seven', 'eight', 'nine', 'ten'])
+                      ['seven', 'eight', 'nine', 'ten'])
     # Raise error if row object has mismatched header.
     row = texttable.Row()
     self.row._keys = ['a']
@@ -163,7 +167,8 @@ class MyRow(texttable.Row):
 
 class UnitTestTextTable(unittest.TestCase):
 
-  def _BasicTable(self):
+  # pylint: disable=invalid-name
+  def BasicTable(self):
     t = texttable.TextTable()
     t.header = ('a', 'b', 'c')
     t.Append(('1', '2', '3'))
@@ -171,7 +176,7 @@ class UnitTestTextTable(unittest.TestCase):
     return t
 
   def testFilter(self):
-    old_table = self._BasicTable()
+    old_table = self.BasicTable()
     filtered_table = old_table.Filter(
         function=lambda row: row['a'] == '10')
     self.assertEqual(1, filtered_table.size)
@@ -184,7 +189,7 @@ class UnitTestTextTable(unittest.TestCase):
     self.assertEqual(0, filtered_table.size)
 
   def testMap(self):
-    old_table = self._BasicTable()
+    old_table = self.BasicTable()
     filtered_table = old_table.Map(
         function=lambda row: row['a'] == '10' and row)
     self.assertEqual(1, filtered_table.size)
@@ -201,38 +206,38 @@ class UnitTestTextTable(unittest.TestCase):
   def testTableRepr(self):
     self.assertEqual(
         "TextTable('a, b, c\\n1, 2, 3\\n10, 20, 30\\n')",
-        repr(self._BasicTable()))
+        repr(self.BasicTable()))
 
   def testTableStr(self):
     self.assertEqual('a, b, c\n1, 2, 3\n10, 20, 30\n',
-                         self._BasicTable().__str__())
+                     self.BasicTable().__str__())
 
   def testTableSetRow(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     t.Append(('one', 'two', 'three'))
     self.assertEqual(['one', 'two', 'three'], t[3].values)
     self.assertEqual(3, t.size)
 
   def testTableRowTypes(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     t.Append(('one', ['two', None], None))
     self.assertEqual(['one', ['two', 'None'], 'None'], t[3].values)
     self.assertEqual(3, t.size)
 
   def testTableRowDictWithInt(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     t.Append({'a': 1, 'b': 'two', 'c': 3})
     self.assertEqual(['1', 'two', '3'], t[3].values)
     self.assertEqual(3, t.size)
 
   def testTableRowListWithInt(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     t.Append([1, 'two', 3])
     self.assertEqual(['1', 'two', '3'], t[3].values)
     self.assertEqual(3, t.size)
 
   def testTableGetRow(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     self.assertEqual(['1', '2', '3'], t[1].values)
     self.assertEqual(['1', '3'], t[1][('a', 'c')])
     self.assertEqual('3', t[1][('c')])
@@ -240,17 +245,17 @@ class UnitTestTextTable(unittest.TestCase):
       self.assertEqual(rnum, t[rnum].row)
 
   def testTableRowWith(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     self.assertEqual(t.RowWith('a', '10'), t[2])
     self.assertRaises(IndexError, t.RowWith, 'g', '5')
 
   def testContains(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     self.assertTrue('a' in t)
     self.assertFalse('x' in t)
 
   def testIteration(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     index = 0
     for r in t:
       index += 1
@@ -315,12 +320,12 @@ a,b, c, d  # Trim comment
     self.assertEqual(2, t.size)
 
   def testHeaderIndex(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     self.assertEqual('c', t.header[2])
     self.assertEqual('a', t.header[0])
 
   def testAppend(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     t.Append(['10', '20', '30'])
     self.assertEqual(3, t.size)
     self.assertEqual(['10', '20', '30'], t[3].values)
@@ -344,10 +349,10 @@ a,b, c, d  # Trim comment
     self.assertRaises(TypeError, t.Append, ['20', '30'])
     self.assertRaises(TypeError, t.Append, ('1', '2', '3', '4'))
     self.assertRaises(TypeError, t.Append,
-                          {'a': '11', 'b': '12', 'd': '13'})
+                      {'a': '11', 'b': '12', 'd': '13'})
 
   def testDeleteRow(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     self.assertEqual(2, t.size)
     t.Remove(1)
     self.assertEqual(['10', '20', '30'], t[1].values)
@@ -357,20 +362,20 @@ a,b, c, d  # Trim comment
     self.assertFalse(t.size)
 
   def testRowNumberandParent(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     t.Append(['10', '20', '30'])
     t.Remove(1)
     for rownum, row in enumerate(t, start=1):
       self.assertEqual(row.row, rownum)
       self.assertEqual(row.table, t)
-    t2 = self._BasicTable()
+    t2 = self.BasicTable()
     t.table = t2
     for rownum, row in enumerate(t, start=1):
       self.assertEqual(row.row, rownum)
       self.assertEqual(row.table, t)
 
   def testAddColumn(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     t.AddColumn('Beer')
     # pylint: disable=E1101
     self.assertEqual(['a', 'b', 'c', 'Beer'], t.header.values)
@@ -382,7 +387,7 @@ a,b, c, d  # Trim comment
 
     t.AddColumn('Spirits', col_index=-2)
     self.assertEqual(['a', 'Wine', 'b', 'Spirits', 'c', 'Beer'],
-                         t.header.values)
+                     t.header.values)
     self.assertEqual(['10', 'Merlot', '20', '', '30', ''], t[2].values)
 
     self.assertRaises(IndexError, t.AddColumn, 'x', col_index=6)
@@ -390,8 +395,8 @@ a,b, c, d  # Trim comment
     self.assertRaises(texttable.TableError, t.AddColumn, 'b')
 
   def testAddTable(self):
-    t = self._BasicTable()
-    t2 = self._BasicTable()
+    t = self.BasicTable()
+    t2 = self.BasicTable()
     t3 = t + t2
     # pylint: disable=E1101
     self.assertEqual(['a', 'b', 'c'], t3.header.values)
@@ -400,13 +405,13 @@ a,b, c, d  # Trim comment
     self.assertEqual(4, t3.size)
 
   def testExtendTable(self):
-    t2 = self._BasicTable()
+    t2 = self.BasicTable()
     t2.AddColumn('Beer')
     t2[1]['Beer'] = 'Lager'
     t2[1]['three'] = 'three'
     t2.Append(('one', 'two', 'three', 'Stout'))
 
-    t = self._BasicTable()
+    t = self.BasicTable()
     # Explicit key, use first column.
     t.extend(t2, ('a',))
     # pylint: disable=E1101
@@ -420,7 +425,7 @@ a,b, c, d  # Trim comment
     self.assertEqual(2, t.size)
 
     # pylint: disable=E1101
-    t = self._BasicTable()
+    t = self.BasicTable()
     # If a Key is non-unique (which is a soft-error), then the first instance
     # on the RHS is used for and applied to all non-unique entries on the LHS.
     t.Append(('1', '2b', '3b'))
@@ -429,7 +434,7 @@ a,b, c, d  # Trim comment
     self.assertEqual(['1', '2', '3', 'Lager'], t[1].values)
     self.assertEqual(['1', '2b', '3b', 'Lager'], t[3].values)
 
-    t = self._BasicTable()
+    t = self.BasicTable()
     # No explicit key, row number is used as the key.
     t.extend(t2)
     self.assertEqual(['a', 'b', 'c', 'Beer'], t.header.values)
@@ -441,7 +446,7 @@ a,b, c, d  # Trim comment
     # row in the first table 't'.
     self.assertEqual(2, t.size)
 
-    t = self._BasicTable()
+    t = self.BasicTable()
     t.Append(('1', 'two', '3'))
     t.Append(('two', '1', 'three'))
     t2 = texttable.TextTable()
@@ -465,7 +470,7 @@ a,b, c, d  # Trim comment
     self.assertRaises(IndexError, t.extend, ['a', 'list'], ('a', 'bogus'))
 
   def testTableWithLabels(self):
-    t = self._BasicTable()
+    t = self.BasicTable()
     self.assertEqual(
         '# LABEL a\n1.b 2\n1.c 3\n10.b 20\n10.c 30\n',
         t.LabelValueTable())
@@ -515,12 +520,12 @@ a,b, c, d  # Trim comment
       t[0].color = terminal.FG_COLOR_WORDS[color_key]
       t.FormattedTable()
       self.assertEqual(sorted(t[0].color),
-                           sorted(terminal.FG_COLOR_WORDS[color_key]))
+                       sorted(terminal.FG_COLOR_WORDS[color_key]))
     for color_key in terminal.BG_COLOR_WORDS:
       t[0].color = terminal.BG_COLOR_WORDS[color_key]
       t.FormattedTable()
       self.assertEqual(sorted(t[0].color),
-                           sorted(terminal.BG_COLOR_WORDS[color_key]))
+                       sorted(terminal.BG_COLOR_WORDS[color_key]))
 
   def testFormattedTableColoredMultilineCells(self):
     t = texttable.TextTable()
@@ -567,7 +572,7 @@ a,b, c, d  # Trim comment
 
   def testFormattedTable(self):
     # Basic table has a single whitespace on each side of the max cell width.
-    t = self._BasicTable()
+    t = self.BasicTable()
     self.assertEqual(
         ' a   b   c  \n'
         '============\n'
@@ -720,7 +725,8 @@ a,b, c, d  # Trim comment
         t.FormattedTable(62, columns=['Host', 'Interface', 'Admin', 'Oper', 'Address']))
 
   def testSortTable(self):
-    def Maketable():
+    # pylint: disable=invalid-name
+    def MakeTable():
       t = texttable.TextTable()
       t.header = ('Col1', 'Col2', 'Col3')
       t.Append(('lorem', 'ipsum', 'dolor'))
@@ -728,21 +734,21 @@ a,b, c, d  # Trim comment
       t.Append(('duis', 'aute', 'irure'))
       return t
     # Test basic sort
-    table = Maketable()
+    table = MakeTable()
     table.sort()
     self.assertEqual(['duis', 'aute', 'irure'], table[1].values)
     self.assertEqual(['lorem', 'ipsum', 'dolor'], table[2].values)
     self.assertEqual(['ut', 'enim', 'ad'], table[3].values)
 
     # Test with different key
-    table = Maketable()
+    table = MakeTable()
     table.sort(key=lambda x: x['Col2'])
     self.assertEqual(['duis', 'aute', 'irure'], table[1].values)
     self.assertEqual(['ut', 'enim', 'ad'], table[2].values)
     self.assertEqual(['lorem', 'ipsum', 'dolor'], table[3].values)
 
     # Multiple keys.
-    table = Maketable()
+    table = MakeTable()
     table.Append(('duis', 'aute', 'aute'))
     table.sort(key=lambda x: x['Col2', 'Col3'])
     self.assertEqual(['duis', 'aute', 'aute'], table[1].values)
@@ -753,7 +759,7 @@ a,b, c, d  # Trim comment
     def compare(a, b):
       # Compare from 2nd char of 1st col
       return cmp(a[0][1:], b[0][1:])
-    table = Maketable()
+    table = MakeTable()
     table.sort(cmp=compare)
     self.assertEqual(['lorem', 'ipsum', 'dolor'], table[1].values)
     self.assertEqual(['ut', 'enim', 'ad'], table[2].values)

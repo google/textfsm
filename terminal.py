@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2011 Google Inc. All Rights Reserved.
 #
@@ -15,9 +15,12 @@
 #     limitations under the License.
 #
 
+"""Simple terminal related routines."""
+
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
-"""Simple terminal related routines."""
 
 __version__ = '0.1.1'
 
@@ -97,7 +100,7 @@ ANSI_START = '\001'
 ANSI_END = '\002'
 
 
-sgr_re = re.compile('(%s?\\033\[\d+(?:;\d+)*m%s?)' % (
+sgr_re = re.compile(r'(%s?\033\[\d+(?:;\d+)*m%s?)' % (
     ANSI_START, ANSI_END))
 
 
@@ -167,9 +170,9 @@ def EncloseAnsiText(text):
 def TerminalSize():
   """Returns terminal length and width as a tuple."""
   try:
-    with open(os.ctermid(), 'r') as tty:
+    with open(os.ctermid(), 'r') as tty_instance:
       length_width = struct.unpack(
-          'hh', fcntl.ioctl(tty.fileno(), termios.TIOCGWINSZ, '1234'))
+          'hh', fcntl.ioctl(tty_instance.fileno(), termios.TIOCGWINSZ, '1234'))
   except (IOError, OSError):
     try:
       length_width = (int(os.environ['LINES']),
@@ -177,6 +180,7 @@ def TerminalSize():
     except (ValueError, KeyError):
       length_width = (24, 80)
   return length_width
+
 
 def LineWrap(text, omit_sgr=False):
   """Break line to fit screen width, factoring in ANSI/SGR escape sequences.
@@ -196,7 +200,7 @@ def LineWrap(text, omit_sgr=False):
     line_length = 0
     for (index, token) in enumerate(token_list):
       # Skip null tokens.
-      if token == '':
+      if token is '':
         continue
 
       if sgr_re.match(token):
@@ -235,7 +239,7 @@ def LineWrap(text, omit_sgr=False):
       else:
         (multiline_line, text_line) = _SplitWithSgr(text_line)
         text_multiline.append(multiline_line)
-    if text_line != '':
+    if text_line:
       text_multiline.append(text_line)
   return '\n'.join(text_multiline)
 
@@ -291,9 +295,9 @@ class Pager(object):
     self.Reset()
 
   def __del__(self):
-    """Deconstructor, closes tty"""
+    """Deconstructor, closes tty."""
     if getattr(self, '_tty', sys.stdin) is not sys.stdin:
-        self._tty.close()
+      self._tty.close()
 
   def Reset(self):
     """Reset the pager to the top of the text."""

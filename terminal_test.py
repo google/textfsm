@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2011 Google Inc. All Rights Reserved.
 #
@@ -20,12 +20,10 @@
 
 import sys
 import unittest
-import terminal
 
-try:
-  xrange(10)
-except NameError:
-  xrange = range
+# pylint: disable=redefined-builtin
+from six.moves import range
+import terminal
 
 
 class TerminalTest(unittest.TestCase):
@@ -49,12 +47,12 @@ class TerminalTest(unittest.TestCase):
 
   def testAnsiText(self):
     self.assertEqual('\033[0mhello world\033[0m',
-                         terminal.AnsiText('hello world'))
+                     terminal.AnsiText('hello world'))
     self.assertEqual('\033[31mhello world\033[0m',
-                         terminal.AnsiText('hello world', ['red']))
+                     terminal.AnsiText('hello world', ['red']))
     self.assertEqual('\033[31;46mhello world',
-                         terminal.AnsiText('hello world', ['red', 'bg_cyan'],
-                                           False))
+                     terminal.AnsiText(
+                         'hello world', ['red', 'bg_cyan'], False))
 
   def testStripAnsi(self):
     text = 'ansi length'
@@ -70,6 +68,7 @@ class TerminalTest(unittest.TestCase):
     self.assertEqual(ansi_enclosed, terminal.EncloseAnsiText(ansi_text))
 
   def testTerminalSize(self):
+    # pylint: disable=unused-argument
     def StubOpen(args, *kwargs):
       raise IOError
     terminal.open = StubOpen
@@ -113,24 +112,26 @@ class TerminalTest(unittest.TestCase):
     self.assertEqual(text7, terminal.LineWrap(text6, True))
 
   def testIssue1(self):
-    self.assertEqual(10, len(terminal.StripAnsiText('boembabies' + '\033[0m')))
+    self.assertEqual(10, len(terminal.StripAnsiText('boembabies' '\033[0m')))
     terminal.TerminalSize = lambda: (10, 10)
     text1 = terminal.LineWrap('\033[32m' + 'boembabies, ' * 10 + 'boembabies' +
-                             '\033[0m', omit_sgr=True)
+                              '\033[0m', omit_sgr=True)
     text2 = ('\033[32m' +
              terminal.LineWrap('boembabies, ' * 10 + 'boembabies') +
              '\033[0m')
     self.assertEqual(text1, text2)
 
+
 class FakeTerminal(object):
+
   def __init__(self):
     self.output = ''
 
-  # pylint: disable-msg=C6409
+  # pylint: disable=C6409
   def write(self, text):
     self.output += text
 
-  # pylint: disable-msg=C6409
+  # pylint: disable=C6409
   def CountLines(self):
     return len(self.output.splitlines())
 
@@ -164,7 +165,7 @@ class PagerTest(unittest.TestCase):
 
   def testPage(self):
     txt = ''
-    for i in xrange(100):
+    for i in range(100):
       txt += '%d a random line of text here\n' % i
     self.p._text = txt
     self.p.Page()
@@ -173,7 +174,7 @@ class PagerTest(unittest.TestCase):
     sys.stdout.output = ''
     self.p = terminal.Pager()
     self.p._text = ''
-    for i in xrange(10):
+    for i in range(10):
       self.p._text += 'a' * 100 + '\n'
     self.p.Page()
     self.assertEqual(20, sys.stdout.CountLines())

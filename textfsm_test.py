@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 #
 # Copyright 2010 Google Inc. All Rights Reserved.
 #
@@ -15,14 +15,12 @@
 # permissions and limitations under the License.
 
 """Unittest for textfsm module."""
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
-
-from six import StringIO
-
 import unittest
-# http://python-mock.sourceforge.net/
-
+from six import StringIO
 import textfsm
 
 
@@ -31,20 +29,20 @@ class UnitTestFSM(unittest.TestCase):
 
   def testFSMValue(self):
     # Check basic line is parsed.
-    line = 'Value beer (\S+)'
+    line = r'Value beer (\S+)'
     v = textfsm.TextFSMValue()
     v.Parse(line)
     self.assertEqual(v.name, 'beer')
-    self.assertEqual(v.regex, '(\S+)')
-    self.assertEqual(v.template, '(?P<beer>\S+)')
+    self.assertEqual(v.regex, r'(\S+)')
+    self.assertEqual(v.template, r'(?P<beer>\S+)')
     self.assertFalse(v.options)
 
     # Test options
-    line = 'Value Filldown,Required beer (\S+)'
+    line = r'Value Filldown,Required beer (\S+)'
     v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
     v.Parse(line)
     self.assertEqual(v.name, 'beer')
-    self.assertEqual(v.regex, '(\S+)')
+    self.assertEqual(v.regex, r'(\S+)')
     self.assertEqual(v.OptionNames(), ['Filldown', 'Required'])
 
     # Multiple parenthesis.
@@ -72,8 +70,8 @@ class UnitTestFSM(unittest.TestCase):
     self.assertEqual(str(v), 'Value Required beer (boo(hoo))')
     v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
     v.Parse(
-        'Value Required,Filldown beer (bo\S+(hoo))')
-    self.assertEqual(str(v), 'Value Required,Filldown beer (bo\S+(hoo))')
+        r'Value Required,Filldown beer (bo\S+(hoo))')
+    self.assertEqual(str(v), r'Value Required,Filldown beer (bo\S+(hoo))')
 
   def testFSMRule(self):
 
@@ -148,8 +146,7 @@ class UnitTestFSM(unittest.TestCase):
 
     # A '->' without a leading space is considered part of the matching line.
     self.assertEqual('  A simple line-> Boo -> Next',
-                         str(textfsm.TextFSMRule(
-                             '  A simple line-> Boo -> Next')))
+                     str(textfsm.TextFSMRule('  A simple line-> Boo -> Next')))
 
   def testParseFSMVariables(self):
     # Trivial template to initiate object.
@@ -179,8 +176,7 @@ class UnitTestFSM(unittest.TestCase):
     self.assertEqual(str(t._GetValue('Beer')), 'Value Filldown Beer (beer)')
     self.assertEqual(
         str(t._GetValue('Spirits')), 'Value Required Spirits (whiskey)')
-    self.assertEqual(str(t._GetValue('Wine')),
-                         'Value Filldown Wine (claret)')
+    self.assertEqual(str(t._GetValue('Wine')), 'Value Filldown Wine (claret)')
 
     # Multiple variables.
     buf = ('# Headline\n'
@@ -196,7 +192,7 @@ class UnitTestFSM(unittest.TestCase):
     self.assertEqual(
         str(t._GetValue('Spirits')), 'Value Spirits ()')
     self.assertEqual(str(t._GetValue('Wine')),
-                         'Value Filldown,Required Wine ((c|C)laret)')
+                     'Value Filldown,Required Wine ((c|C)laret)')
 
     # Malformed variables.
     buf = 'Value Beer (beer) beer'
@@ -220,11 +216,11 @@ class UnitTestFSM(unittest.TestCase):
     f = StringIO(buf)
     t._ParseFSMVariables(f)
     self.assertEqual(str(t._GetValue('Beer')),
-                         'Value Filldown Beer (bee(r), (and) (M)ead$)')
+                     'Value Filldown Beer (bee(r), (and) (M)ead$)')
     self.assertEqual(
         str(t._GetValue('Spirits,and,some')), 'Value Spirits,and,some ()')
     self.assertEqual(str(t._GetValue('Wine')),
-                         'Value Filldown,Required Wine ((c|C)laret)')
+                     'Value Filldown,Required Wine ((c|C)laret)')
 
     # Variable name too long.
     buf = ('Value Filldown '
@@ -236,7 +232,7 @@ class UnitTestFSM(unittest.TestCase):
 
   def testParseFSMState(self):
 
-    f = StringIO('Value Beer (.)\nValue Wine (\w)\n\nStart\n')
+    f = StringIO('Value Beer (.)\nValue Wine (\\w)\n\nStart\n')
     t = textfsm.TextFSM(f)
 
     # Fails as we already have 'Start' state.
@@ -292,8 +288,7 @@ class UnitTestFSM(unittest.TestCase):
     f = StringIO(buf)
     t.states = {}
     t._ParseFSMState(f)
-    self.assertEqual(str(t.states['Start'][0]),
-                         '  ^.${Beer}${Wine}.')
+    self.assertEqual(str(t.states['Start'][0]), '  ^.${Beer}${Wine}.')
     self.assertEqual(str(t.states['Start'][1]), '  ^Hello $Beer')
     self.assertEqual(str(t.states['Start'][2]), '  ^Last-[Cc]ha$$nge')
     try:
@@ -304,7 +299,7 @@ class UnitTestFSM(unittest.TestCase):
     t.states['bogus'] = []
 
     # State name too long (>32 char).
-    buf = 'nametoolong_nametoolong_nametoolong_nametoolong_nametoolo\n  ^.\n\n'
+    buf = 'rnametoolong_nametoolong_nametoolong_nametoolong_nametoolo\n  ^.\n\n'
     f = StringIO(buf)
     self.assertRaises(textfsm.TextFSMTemplateError, t._ParseFSMState, f)
 
@@ -312,18 +307,18 @@ class UnitTestFSM(unittest.TestCase):
 
     # 'Continue' should not accept a destination.
     self.assertRaises(textfsm.TextFSMTemplateError, textfsm.TextFSMRule,
-                          '^.* -> Continue Start')
+                      '^.* -> Continue Start')
 
     # 'Error' accepts a text string but "next' state does not.
     self.assertEqual(str(textfsm.TextFSMRule('  ^ -> Error "hi there"')),
-                         '  ^ -> Error "hi there"')
+                     '  ^ -> Error "hi there"')
     self.assertRaises(textfsm.TextFSMTemplateError, textfsm.TextFSMRule,
                       '^.* -> Next "Hello World"')
 
   def testRuleStartsWithCarrot(self):
 
     f = StringIO(
-        'Value Beer (.)\nValue Wine (\w)\n\nStart\n  A Simple line')
+        'Value Beer (.)\nValue Wine (\\w)\n\nStart\n  A Simple line')
     self.assertRaises(textfsm.TextFSMTemplateError, textfsm.TextFSM, f)
 
   def testValidateFSM(self):
@@ -371,21 +366,21 @@ class UnitTestFSM(unittest.TestCase):
   def testTextFSM(self):
 
     # Trivial template
-    buf = 'Value Beer (.*)\n\nStart\n  ^\w\n'
+    buf = 'Value Beer (.*)\n\nStart\n  ^\\w\n'
     buf_result = buf
     f = StringIO(buf)
     t = textfsm.TextFSM(f)
     self.assertEqual(str(t), buf_result)
 
     # Slightly more complex, multple vars.
-    buf = 'Value A (.*)\nValue B (.*)\n\nStart\n  ^\w\n\nState1\n  ^.\n'
+    buf = 'Value A (.*)\nValue B (.*)\n\nStart\n  ^\\w\n\nState1\n  ^.\n'
     buf_result = buf
     f = StringIO(buf)
     t = textfsm.TextFSM(f)
     self.assertEqual(str(t), buf_result)
 
     # Complex template, multiple vars and states with comments (no var options).
-    buf = """# Header
+    buf = r"""# Header
 # Header 2
 Value Beer (.*)
 Value Wine (\w+)
@@ -405,7 +400,7 @@ End
 # Tail comment.
 """
 
-    buf_result = """Value Beer (.*)
+    buf_result = r"""Value Beer (.*)
 Value Wine (\w+)
 
 Start
@@ -447,8 +442,7 @@ State1
     t.Reset()
     data = 'Matching text\nAnd again'
     result = t.ParseText(data)
-    self.assertEqual(str(result),
-                         "[['Matching text'], ['And again']]")
+    self.assertEqual(str(result), "[['Matching text'], ['And again']]")
 
     # Two Variables and singular options.
     tplt = ('Value Required boo (one)\nValue Filldown hoo (two)\n\n'
@@ -691,7 +685,7 @@ State1
     data = 'Matching text A\nMatching text B'
 
     result = t.ParseText(data)
-    self.assertEqual(str(result), "[]")
+    self.assertEqual(str(result), '[]')
 
     # End State, with explicit Record.
     tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> Record End\n'
@@ -706,7 +700,6 @@ State1
 
     result = t.ParseText(data)
     self.assertEqual(str(result), "[['Matching text A']]")
-
 
   def testInvalidRegexp(self):
 
@@ -723,7 +716,7 @@ State1
     result = t.ParseText(data)
     self.assertEqual(str(result), "[['f'], ['fo'], ['foo']]")
 
-  def testReEnteringState(sefl):
+  def testReEnteringState(self):
     """Issue 2. TextFSM should leave file pointer at top of template file."""
 
     tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> Next Stop\n\nStop\n  ^abc\n'

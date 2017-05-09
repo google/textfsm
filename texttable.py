@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python
 #
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
@@ -23,11 +23,14 @@ Tables can be created from CSV input and in-turn supports a number of display
 formats such as CSV and variable sized and justified rows.
 """
 
-from six.moves import range
-from functools import cmp_to_key
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import copy
+from functools import cmp_to_key
 import textwrap
+# pylint: disable=redefined-builtin
+from six.moves import range
 import terminal
 
 
@@ -366,6 +369,7 @@ class TextTable(object):
     """Copy table instance."""
 
     new_table = self.__class__()
+    # pylint: disable=protected-access
     new_table._table = [self.header]
     for row in self[1:]:
       new_table.Append(row)
@@ -390,6 +394,7 @@ class TextTable(object):
       function = lambda row: bool(flat(row.values))
 
     new_table = self.__class__()
+    # pylint: disable=protected-access
     new_table._table = [self.header]
     for row in self:
       if function(row) is True:
@@ -410,6 +415,7 @@ class TextTable(object):
                   must be compatible with Append().
     """
     new_table = self.__class__()
+    # pylint: disable=protected-access
     new_table._table = [self.header]
     for row in self:
       filtered_row = function(row)
@@ -534,7 +540,7 @@ class TextTable(object):
     if columns:
       result = []
       for col in columns:
-        if not col in self.header:
+        if col not in self.header:
           raise TableError('Column header %s not known in table.' % col)
         result.append(row[self.header.index(col)])
       row = result
@@ -728,7 +734,7 @@ class TextTable(object):
         value = terminal.StripAnsiText(value)
         largest[key] = max(len(value), largest[key])
         smallest[key] = max(self._SmallestColSize(value), smallest[key])
-    # pylint: enable-msg=E1103
+    # pylint: enable=E1103
 
     min_total_width = 0
     multi_word = []

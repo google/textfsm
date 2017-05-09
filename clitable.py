@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python
 #
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
@@ -86,6 +86,7 @@ class IndexTable(object):
     """Returns a copy of an IndexTable object."""
     clone = IndexTable()
     if hasattr(self, '_index_file'):
+      # pylint: disable=protected-access
       clone._index_file = self._index_file
       clone._index_handle = self._index_handle
 
@@ -93,10 +94,11 @@ class IndexTable(object):
     clone.compiled = self.compiled
     return clone
 
-  def __deepcopy__(self, memodict={}):
+  def __deepcopy__(self, memodict=None):
     """Returns a deepcopy of an IndexTable object."""
     clone = IndexTable()
     if hasattr(self, '_index_file'):
+      # pylint: disable=protected-access
       clone._index_file = copy.deepcopy(self._index_file)
       clone._index_handle = open(clone._index_file, 'r')
 
@@ -139,7 +141,7 @@ class IndexTable(object):
       try:
         for key in attributes:
           # Silently skip attributes not present in the index file.
-          # pylint: disable-msg=E1103
+          # pylint: disable=E1103
           if (key in row.header and row[key] and
               not row[key].match(attributes[key])):
             # This line does not match, so break and try next row.
@@ -171,19 +173,19 @@ class CliTable(texttable.TextTable):
   _lock = threading.Lock()
   INDEX = {}
 
-  # pylint: disable-msg=C6409
+  # pylint: disable=C6409
   def synchronised(func):
     """Synchronisation decorator."""
 
-    # pylint: disable-msg=E0213
+    # pylint: disable=E0213
     def Wrapper(main_obj, *args, **kwargs):
-      main_obj._lock.acquire()                  # pylint: disable-msg=W0212
+      main_obj._lock.acquire()                  # pylint: disable=W0212
       try:
-        return func(main_obj, *args, **kwargs)  # pylint: disable-msg=E1102
+        return func(main_obj, *args, **kwargs)  # pylint: disable=E1102
       finally:
-        main_obj._lock.release()                # pylint: disable-msg=W0212
+        main_obj._lock.release()                # pylint: disable=W0212
     return Wrapper
-    # pylint: enable-msg=C6409
+    # pylint: enable=C6409
 
   @synchronised
   def __init__(self, index_file=None, template_dir=None):
@@ -193,7 +195,7 @@ class CliTable(texttable.TextTable):
       index_file: String, file where template/command mappings reside.
       template_dir: String, directory where index file and templates reside.
     """
-    # pylint: disable-msg=E1002
+    # pylint: disable=E1002
     super(CliTable, self).__init__()
     self._keys = set()
     self.raw = None
@@ -221,7 +223,7 @@ class CliTable(texttable.TextTable):
       self.index = self.INDEX[fullpath]
 
     # Does the IndexTable have the right columns.
-    if 'Template' not in self.index.index.header:    # pylint: disable-msg=E1103
+    if 'Template' not in self.index.index.header:    # pylint: disable=E1103
       raise CliTableError("Index file does not have 'Template' column.")
 
   def _TemplateNamesToFiles(self, template_str):
@@ -312,7 +314,7 @@ class CliTable(texttable.TextTable):
   def _PreParse(self, key, value):
     """Executed against each field of each row read from index table."""
     if key == 'Command':
-      return re.sub('(\[\[.+?\]\])', self._Completion, value)
+      return re.sub(r'(\[\[.+?\]\])', self._Completion, value)
     else:
       return value
 
@@ -324,8 +326,8 @@ class CliTable(texttable.TextTable):
       return value
 
   def _Completion(self, match):
-    # pylint: disable-msg=C6114
-    """Replaces double square brackets with variable length completion.
+    # pylint: disable=C6114
+    r"""Replaces double square brackets with variable length completion.
 
     Completion cannot be mixed with regexp matching or '\' characters
     i.e. '[[(\n)]] would become (\(n)?)?.'
@@ -343,16 +345,16 @@ class CliTable(texttable.TextTable):
   def LabelValueTable(self, keys=None):
     """Return LabelValue with FSM derived keys."""
     keys = keys or self.superkey
-    # pylint: disable-msg=E1002
+    # pylint: disable=E1002
     return super(CliTable, self).LabelValueTable(keys)
 
-  # pylint: disable-msg=W0622,C6409
+  # pylint: disable=W0622,C6409
   def sort(self, cmp=None, key=None, reverse=False):
     """Overrides sort func to use the KeyValue for the key."""
     if not key and self._keys:
       key = self.KeyValue
     super(CliTable, self).sort(cmp=cmp, key=key, reverse=reverse)
-  # pylint: enable-msg=W0622
+  # pylint: enable=W0622
 
   def AddKeys(self, key_list):
     """Mark additional columns as being part of the superkey.

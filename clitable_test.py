@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python
 #
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
@@ -16,14 +16,18 @@
 
 """Unittest for clitable script."""
 
-from six.moves import StringIO
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-import clitable
 import copy
-import copyable_regex_object
 import os
 import re
 import unittest
+
+import clitable
+import copyable_regex_object
+from six.moves import StringIO
 
 
 class UnitTestIndexTable(unittest.TestCase):
@@ -71,7 +75,7 @@ class UnitTestIndexTable(unittest.TestCase):
     indx = clitable.IndexTable(file_path=file_path)
     self.assertEqual(1, indx.GetRowMatch({'Hostname': 'abc'}))
     self.assertEqual(2, indx.GetRowMatch({'Hostname': 'abc',
-                                              'Vendor': 'VendorB'}))
+                                          'Vendor': 'VendorB'}))
 
   def testCopy(self):
     """Tests copy of IndexTable object."""
@@ -100,13 +104,12 @@ class UnitTestCliTable(unittest.TestCase):
   def testCompletion(self):
     """Tests '[[]]' syntax replacement."""
     indx = clitable.CliTable()
-    self.assertEqual('abc',
-                         re.sub('(\[\[.+?\]\])', indx._Completion, 'abc'))
+    self.assertEqual('abc', re.sub(r'(\[\[.+?\]\])', indx._Completion, 'abc'))
     self.assertEqual('a(b(c)?)?',
-                         re.sub('(\[\[.+?\]\])', indx._Completion, 'a[[bc]]'))
+                     re.sub(r'(\[\[.+?\]\])', indx._Completion, 'a[[bc]]'))
     self.assertEqual('a(b(c)?)? de(f)?',
-                         re.sub('(\[\[.+?\]\])', indx._Completion,
-                                'a[[bc]] de[[f]]'))
+                     re.sub(r'(\[\[.+?\]\])', indx._Completion,
+                            'a[[bc]] de[[f]]'))
 
   def testRepeatRead(self):
     """Tests that index file is read only once at the class level."""
@@ -117,7 +120,7 @@ class UnitTestCliTable(unittest.TestCase):
     """Tests PreParse and PreCompile."""
 
     self.assertEqual('sh(o(w)?)? ve(r(s(i(o(n)?)?)?)?)?',
-                         self.clitable.index.index[1]['Command'])
+                     self.clitable.index.index[1]['Command'])
     self.assertEqual(None, self.clitable.index.compiled[1]['Template'])
     self.assertTrue(
         self.clitable.index.compiled[1]['Command'].match('sho vers'))
@@ -158,13 +161,13 @@ class UnitTestCliTable(unittest.TestCase):
         self.clitable.table, 'Col1, Col2, Col3\nd, e, f\n')
 
     self.assertRaises(clitable.CliTableError, self.clitable.ParseCmd,
-                          self.input_data,
-                          attributes={'Command': 'show vers',
-                                      'Vendor': 'bogus'})
+                      self.input_data,
+                      attributes={'Command': 'show vers',
+                                  'Vendor': 'bogus'})
     self.assertRaises(clitable.CliTableError, self.clitable.ParseCmd,
-                          self.input_data,
-                          attributes={'Command': 'unknown command',
-                                      'Vendor': 'VendorA'})
+                      self.input_data,
+                      attributes={'Command': 'unknown command',
+                                  'Vendor': 'VendorA'})
 
   def testParseWithMultiTemplates(self):
     """Tests that multiple matching templates extend the table."""
@@ -181,14 +184,14 @@ class UnitTestCliTable(unittest.TestCase):
         self.clitable.table,
         'Col1, Col4, Col2, Col3\na, b, b, c\nd, e, e, f\n')
     self.assertRaises(IOError, self.clitable.ParseCmd,
-                          self.input_data,
-                          attributes={'Command': 'sh vers'},
-                          templates='clitable_templateB:clitable_bogus')
+                      self.input_data,
+                      attributes={'Command': 'sh vers'},
+                      templates='clitable_templateB:clitable_bogus')
 
   def testRequireCols(self):
     """Tests that CliTable expects a 'Template' row to be present."""
     self.assertRaises(clitable.CliTableError, clitable.CliTable,
-                          'nondefault_index', 'testdata')
+                      'nondefault_index', 'testdata')
 
   def testSuperKey(self):
     """Tests that superkey is derived from the template and is extensible."""

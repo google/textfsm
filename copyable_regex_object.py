@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python
 #
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
@@ -21,7 +21,7 @@ import re
 
 class CopyableRegexObject(object):
   """Like a re.RegexObject, but can be copied."""
-  # pylint: disable-msg=C6409
+  # pylint: disable=C6409
 
   def __init__(self, pattern):
     self.pattern = pattern

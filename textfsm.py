@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 #
 # Copyright 2010 Google Inc. All Rights Reserved.
 #
@@ -24,6 +24,8 @@ A simple template language is used to describe a state machine to
 parse a specific type of text input, returning a record of values
 for each input entity.
 """
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
 __version__ = '0.3.2'
@@ -157,6 +159,7 @@ class TextFSMOptions(object):
         # Get index of relevant result column.
         value_idx = self.value.fsm.values.index(self.value)
         # Go up the list from the end until we see a filled value.
+        # pylint: disable=protected-access
         for result in reversed(self.value.fsm._result):
           if result[value_idx]:
             # Stop when a record has this column already.
@@ -224,24 +227,24 @@ class TextFSMValue(object):
     """Assign a value to this Value."""
     self.value = value
     # Call OnAssignVar on options.
-    [option.OnAssignVar() for option in self.options]
+    _ = [option.OnAssignVar() for option in self.options]
 
   def ClearVar(self):
     """Clear this Value."""
     self.value = None
     # Call OnClearVar on options.
-    [option.OnClearVar() for option in self.options]
+    _ = [option.OnClearVar() for option in self.options]
 
   def ClearAllVar(self):
     """Clear this Value."""
     self.value = None
     # Call OnClearAllVar on options.
-    [option.OnClearAllVar() for option in self.options]
+    _ = [option.OnClearAllVar() for option in self.options]
 
   def Header(self):
     """Fetch the header name of this Value."""
     # Call OnGetValue on options.
-    [option.OnGetValue() for option in self.options]
+    _ = [option.OnGetValue() for option in self.options]
     return self.name
 
   def OptionNames(self):
@@ -269,7 +272,7 @@ class TextFSMValue(object):
       for option in options.split(','):
         self._AddOption(option)
       # Call option OnCreateOptions callbacks
-      [option.OnCreateOptions() for option in self.options]
+      _ = [option.OnCreateOptions() for option in self.options]
 
       self.name = value_line[2]
       self.regex = ' '.join(value_line[3:])
@@ -315,7 +318,7 @@ class TextFSMValue(object):
 
   def OnSaveRecord(self):
     """Called just prior to a record being committed."""
-    [option.OnSaveRecord() for option in self.options]
+    _ = [option.OnSaveRecord() for option in self.options]
 
   def __str__(self):
     """Prints out the FSM Value, mimic the input file."""
@@ -331,7 +334,7 @@ class TextFSMValue(object):
 
 class CopyableRegexObject(object):
   """Like a re.RegexObject, but can be copied."""
-  # pylint: disable-msg=C6409
+  # pylint: disable=C6409
 
   def __init__(self, pattern):
     self.pattern = pattern
@@ -372,7 +375,7 @@ class TextFSMRule(object):
     line_num: Integer row number of Value.
   """
   # Implicit default is '(regexp) -> Next.NoRecord'
-  MATCH_ACTION = re.compile('(?P<match>.*)(\s->(?P<action>.*))')
+  MATCH_ACTION = re.compile(r'(?P<match>.*)(\s->(?P<action>.*))')
 
   # The structure to the right of the '->'.
   LINE_OP = ('Continue', 'Next', 'Error')
@@ -383,16 +386,16 @@ class TextFSMRule(object):
   # Record operators.
   RECORD_OP_RE = '(?P<rec_op>%s)' % '|'.join(RECORD_OP)
   # Line operator with optional record operator.
-  OPERATOR_RE = '(%s(\.%s)?)' % (LINE_OP_RE, RECORD_OP_RE)
+  OPERATOR_RE = r'(%s(\.%s)?)' % (LINE_OP_RE, RECORD_OP_RE)
   # New State or 'Error' string.
-  NEWSTATE_RE = '(?P<new_state>\w+|\".*\")'
+  NEWSTATE_RE = r'(?P<new_state>\w+|\".*\")'
 
   # Compound operator (line and record) with optional new state.
-  ACTION_RE = re.compile('\s+%s(\s+%s)?$' % (OPERATOR_RE, NEWSTATE_RE))
+  ACTION_RE = re.compile(r'\s+%s(\s+%s)?$' % (OPERATOR_RE, NEWSTATE_RE))
   # Record operator with optional new state.
-  ACTION2_RE = re.compile('\s+%s(\s+%s)?$' % (RECORD_OP_RE, NEWSTATE_RE))
+  ACTION2_RE = re.compile(r'\s+%s(\s+%s)?$' % (RECORD_OP_RE, NEWSTATE_RE))
   # Default operators with optional new state.
-  ACTION3_RE = re.compile('(\s+%s)?$' % (NEWSTATE_RE))
+  ACTION3_RE = re.compile(r'(\s+%s)?$' % (NEWSTATE_RE))
 
   def __init__(self, line, line_num=-1, var_map=None):
     """Initialise a new rule object.
@@ -475,14 +478,14 @@ class TextFSMRule(object):
     # Only 'Next' (or implicit 'Next') line operator can have a new_state.
     # But we allow error to have one as a warning message so we are left
     # checking that Continue does not.
-    if (self.line_op == 'Continue' and self.new_state):
+    if self.line_op == 'Continue' and self.new_state:
       raise TextFSMTemplateError(
           "Action '%s' with new state %s specified. Line: %s."
           % (self.line_op, self.new_state, self.line_num))
 
     # Check that an error message is present only with the 'Error' operator.
     if self.line_op != 'Error' and self.new_state:
-      if not re.match('\w+', self.new_state):
+      if not re.match(r'\w+', self.new_state):
         raise TextFSMTemplateError(
             'Alphanumeric characters only in state names. Line: %s.'
             % (self.line_num))
@@ -521,8 +524,8 @@ class TextFSM(object):
   """
   # Variable and State name length.
   MAX_NAME_LEN = 48
-  comment_regex = re.compile('^\s*#')
-  state_name_re = re.compile('^(\w+)$')
+  comment_regex = re.compile(r'^\s*#')
+  state_name_re = re.compile(r'^(\w+)$')
   _DEFAULT_OPTIONS = TextFSMOptions
 
   def __init__(self, template, options_class=_DEFAULT_OPTIONS):
@@ -811,7 +814,7 @@ class TextFSM(object):
 
     # Remove 'End' state.
     if 'End' in self.states:
-      del(self.states['End'])
+      del self.states['End']
       self.state_list.remove('End')
 
     # Ensure jump states are all valid.
@@ -882,7 +885,6 @@ class TextFSM(object):
               self._cur_state = self.states[rule.new_state]
             self._cur_state_name = rule.new_state
           break
-
 
   def _CheckRule(self, rule, line):
     """Check a line against the given rule.
@@ -965,11 +967,11 @@ class TextFSM(object):
 
   def _ClearRecord(self):
     """Remove non 'Filldown' record entries."""
-    [value.ClearVar() for value in self.values]
+    _ = [value.ClearVar() for value in self.values]
 
   def _ClearAllRecord(self):
     """Remove all record entries."""
-    [value.ClearAllVar() for value in self.values]
+    _ = [value.ClearAllVar() for value in self.values]
 
   def GetValuesByAttrib(self, attribute):
     """Returns the list of values that have a particular attribute."""

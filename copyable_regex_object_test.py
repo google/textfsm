@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python
 #
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
@@ -16,9 +16,14 @@
 
 """Tests for copyable_regex_object."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import copy
-import copyable_regex_object
 import unittest
+
+import copyable_regex_object
 
 
 class CopyableRegexObjectTest(unittest.TestCase):
