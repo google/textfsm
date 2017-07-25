@@ -178,7 +178,9 @@ class TextFSMOptions(object):
 
     def OnAssignVar(self):
       match = re.match(self.value.regex, self.value.value)
-      if match:
+      # If the List-value regex has match-groups defined, add the grouped results to the list
+      # Otherwise, add the string that was matched
+      if match and match.groupdict():
           self._value.append(match.groupdict())
       else:
           self._value.append(self.value.value)
