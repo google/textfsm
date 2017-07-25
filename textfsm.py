@@ -177,7 +177,6 @@ class TextFSMOptions(object):
       self.OnClearAllVar()
 
     def OnAssignVar(self):
-      self._value.append(self.value.value)
       match = re.match(self.value.regex, self.value.value)
       if match:
           self._value.append(match.groupdict())
