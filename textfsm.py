@@ -378,7 +378,7 @@ class TextFSMRule(object):
   MATCH_ACTION = re.compile(r'(?P<match>.*)(\s->(?P<action>.*))')
 
   # The structure to the right of the '->'.
-  LINE_OP = ('Continue', 'Next', 'Error')
+  LINE_OP = ('Continue', 'Next', 'Error', 'Repeat')
   RECORD_OP = ('Clear', 'Clearall', 'Record', 'NoRecord')
 
   # Line operators.
@@ -854,8 +854,14 @@ class TextFSM(object):
     if text:
       lines = text.splitlines()
 
-    for line in lines:
-      self._CheckLine(line)
+    i = 0
+    while i < len(lines):
+      result = self._CheckLine(lines[i])
+
+      # This allows for a single line of text to act as both a delimiter
+      # between states and as as part of the data in the next record.
+      if not result == 'Repeat':
+          i += 1
       if self._cur_state_name in ('End', 'EOF'):
         break
 
@@ -878,13 +884,14 @@ class TextFSM(object):
         for value in matched.groupdict():
           self._AssignVar(matched, value)
 
-        if self._Operations(rule):
+        op_result = self._Operations(rule)
+        if op_result:
           # Not a Continue so check for state transition.
           if rule.new_state:
             if rule.new_state not in ('End', 'EOF'):
               self._cur_state = self.states[rule.new_state]
             self._cur_state_name = rule.new_state
-          break
+          return op_result
 
   def _CheckRule(self, rule, line):
     """Check a line against the given rule.
@@ -961,6 +968,9 @@ class TextFSM(object):
     elif rule.line_op == 'Continue':
       # Continue with current line without returning to the start of the state.
       return False
+
+    elif rule.line_op == 'Repeat':
+        return 'Repeat'
 
     # Back to start of current state with a new line.
     return True
