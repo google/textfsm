@@ -171,14 +171,32 @@ class TextFSMOptions(object):
     """Value constitutes part of the Key of the record."""
 
   class List(OptionBase):
-    """Value takes the form of a list."""
+    """
+    Value takes the form of a list.
+
+    If the value regex contains mested match groups in the form (?P<name>regex),
+    instead of adding a string to the list, we add a dictionary of the groups.
+
+    Eg.
+    Value List ((?P<name>\w+)\s+(?P<age>\d+)) would create results like [{'name': 'Bob', 'age': 32}]
+
+    Do not give nested groups the same name as another values in the template.
+    """
 
     def OnCreateOptions(self):
       self.OnClearAllVar()
 
     def OnAssignVar(self):
-      match = re.match(self.value.regex, self.value.value)
-      # If the List-value regex has match-groups defined, add the grouped results to the list
+      # Store the compiled regex object after compiling it only once
+      if not getattr(self.value, 'compiled_regex', None):
+          self.value.compiled_regex = re.compile(self.value.regex)
+
+      # Nested matches will have more than one match group
+      if self.value.compiled_regex.groups > 1:
+          match = re.match(self.value.compiled_regex, self.value.value)
+      else:
+          match = None
+      # If the List-value regex has match-groups defined, add the resulting dict to the list
       # Otherwise, add the string that was matched
       if match and match.groupdict():
           self._value.append(match.groupdict())

@@ -610,6 +610,26 @@ State1
     result = t.ParseText(data)
     self.assertEqual(str(result), ("[[['one'], 'two']]"))
 
+
+  def testNestedMatching(self):
+      """
+      Ensures that List-type values with nested regex capture groups are parsed correctly
+      as a list of dictionaries.
+      """
+      tplt = (
+          "Value List foo ((?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)\n\n"
+          "Start\n  ^\s*${foo}\n  ^\s*$$ -> Record"
+      )
+      t = textfsm.TextFSM(StringIO(tplt))
+      data = " Bob: 32 NC\n Alice: 27 NY\n Jeff: 45 CA\n\n"
+      result = t.ParseText(data)
+      self.assertEqual(
+          str(result), (
+              "[[[{'name': 'Bob', 'age': '32', 'state': 'NC'}, "
+              "{'name': 'Alice', 'age': '27', 'state': 'NY'}, "
+              "{'name': 'Jeff', 'age': '45', 'state': 'CA'}]]]"
+      ))
+
   def testGetValuesByAttrib(self):
 
     tplt = ('Value Required boo (on.)\n'
