@@ -174,26 +174,22 @@ class TextFSMOptions(object):
     """
     Value takes the form of a list.
 
-    If the value regex contains mested match groups in the form (?P<name>regex),
+    If the value regex contains nested match groups in the form (?P<name>regex),
     instead of adding a string to the list, we add a dictionary of the groups.
 
     Eg.
     Value List ((?P<name>\w+)\s+(?P<age>\d+)) would create results like [{'name': 'Bob', 'age': 32}]
 
-    Do not give nested groups the same name as another values in the template.
+    Do not give nested groups the same name as other values in the template.
     """
 
     def OnCreateOptions(self):
       self.OnClearAllVar()
 
     def OnAssignVar(self):
-      # Store the compiled regex object after compiling it only once
-      if not getattr(self.value, 'compiled_regex', None):
-          self.value.compiled_regex = re.compile(self.value.regex)
-
       # Nested matches will have more than one match group
       if self.value.compiled_regex.groups > 1:
-          match = re.match(self.value.compiled_regex, self.value.value)
+          match = self.value.compiled_regex.match(self.value.value)
       else:
           match = None
       # If the List-value regex has match-groups defined, add the resulting dict to the list
@@ -316,6 +312,10 @@ class TextFSMValue(object):
           "Value '%s' must be contained within a '()' pair." % self.regex)
 
     self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
+
+    # Compile and store the regex object only on List-type values for use in nested matching
+    if any(map(lambda x: isinstance(x, TextFSMOptions.List), self.options)):
+        self.compiled_regex = re.compile(self.regex)
 
   def _AddOption(self, name):
     """Add an option to this Value.
