@@ -634,6 +634,15 @@ State1
               "{'name': 'Jeff', 'age': '45', 'state': 'CA'}], 'Julia']]"
       ))
 
+  def testNestedNameConflict(self):
+      tplt = (
+          # Two nested groups are called "name"
+          "Value List foo ((?P<name>\w+)\s+(?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)\n"
+          "Start\n  ^\s*${foo}\n  ^\s*$$ -> Record"
+      )
+      self.assertRaises(textfsm.TextFSMTemplateError, textfsm.TextFSM, StringIO(tplt))
+
+
   def testGetValuesByAttrib(self):
 
     tplt = ('Value Required boo (on.)\n'

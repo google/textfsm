@@ -315,7 +315,10 @@ class TextFSMValue(object):
 
     # Compile and store the regex object only on List-type values for use in nested matching
     if any(map(lambda x: isinstance(x, TextFSMOptions.List), self.options)):
-        self.compiled_regex = re.compile(self.regex)
+        try:
+            self.compiled_regex = re.compile(self.regex)
+        except re.error as e:
+            raise TextFSMTemplateError(str(e))
 
   def _AddOption(self, name):
     """Add an option to this Value.
