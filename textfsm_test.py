@@ -610,6 +610,39 @@ State1
     result = t.ParseText(data)
     self.assertEqual(str(result), ("[[['one'], 'two']]"))
 
+
+  def testNestedMatching(self):
+      """
+      Ensures that List-type values with nested regex capture groups are parsed correctly
+      as a list of dictionaries.
+
+      Additionaly, another value is used with the same group-name as one of the nested groups to ensure that
+      there are no conflicts when the same name is used.
+      """
+      tplt = (
+          "Value List foo ((?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)\n"  # A nested group is called "name"
+          "Value name (\w+)\n\n"  # A regular value is called "name"
+          "Start\n  ^\s*${foo}\n  ^\s*${name}\n  ^\s*$$ -> Record"  # "${name}" here refers to the Value called "name"
+      )
+      t = textfsm.TextFSM(StringIO(tplt))
+      data = " Bob: 32 NC\n Alice: 27 NY\n Jeff: 45 CA\nJulia\n\n"  # Julia should be parsed as "name" separately
+      result = t.ParseText(data)
+      self.assertEqual(
+          str(result), (
+              "[[[{'name': 'Bob', 'age': '32', 'state': 'NC'}, "
+              "{'name': 'Alice', 'age': '27', 'state': 'NY'}, "
+              "{'name': 'Jeff', 'age': '45', 'state': 'CA'}], 'Julia']]"
+      ))
+
+  def testNestedNameConflict(self):
+      tplt = (
+          # Two nested groups are called "name"
+          "Value List foo ((?P<name>\w+)\s+(?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)\n"
+          "Start\n  ^\s*${foo}\n  ^\s*$$ -> Record"
+      )
+      self.assertRaises(textfsm.TextFSMTemplateError, textfsm.TextFSM, StringIO(tplt))
+
+
   def testGetValuesByAttrib(self):
 
     tplt = ('Value Required boo (on.)\n'

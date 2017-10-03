@@ -171,13 +171,33 @@ class TextFSMOptions(object):
     """Value constitutes part of the Key of the record."""
 
   class List(OptionBase):
-    """Value takes the form of a list."""
+    """
+    Value takes the form of a list.
+
+    If the value regex contains nested match groups in the form (?P<name>regex),
+    instead of adding a string to the list, we add a dictionary of the groups.
+
+    Eg.
+    Value List ((?P<name>\w+)\s+(?P<age>\d+)) would create results like [{'name': 'Bob', 'age': 32}]
+
+    Do not give nested groups the same name as other values in the template.
+    """
 
     def OnCreateOptions(self):
       self.OnClearAllVar()
 
     def OnAssignVar(self):
-      self._value.append(self.value.value)
+      # Nested matches will have more than one match group
+      if self.value.compiled_regex.groups > 1:
+          match = self.value.compiled_regex.match(self.value.value)
+      else:
+          match = None
+      # If the List-value regex has match-groups defined, add the resulting dict to the list
+      # Otherwise, add the string that was matched
+      if match and match.groupdict():
+          self._value.append(match.groupdict())
+      else:
+          self._value.append(self.value.value)
 
     def OnClearVar(self):
       if 'Filldown' not in self.value.OptionNames():
@@ -292,6 +312,13 @@ class TextFSMValue(object):
           "Value '%s' must be contained within a '()' pair." % self.regex)
 
     self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
+
+    # Compile and store the regex object only on List-type values for use in nested matching
+    if any(map(lambda x: isinstance(x, TextFSMOptions.List), self.options)):
+        try:
+            self.compiled_regex = re.compile(self.regex)
+        except re.error as e:
+            raise TextFSMTemplateError(str(e))
 
   def _AddOption(self, name):
     """Add an option to this Value.
@@ -910,7 +937,9 @@ class TextFSM(object):
       matched: (regexp.match) Named group for each matched value.
       value: (str) The matched value.
     """
-    self._GetValue(value).AssignVar(matched.group(value))
+    _value = self._GetValue(value)
+    if _value is not None:
+        _value.AssignVar(matched.group(value))
 
   def _Operations(self, rule):
     """Operators on the data record.
