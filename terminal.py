@@ -25,7 +25,11 @@ from __future__ import print_function
 __version__ = '0.1.1'
 
 
-import fcntl
+try:
+  import fcntl
+  USE_FCNTL = True
+except ImportError:
+  USE_FCNTL = False
 import getopt
 import os
 import re
@@ -170,9 +174,13 @@ def EncloseAnsiText(text):
 def TerminalSize():
   """Returns terminal length and width as a tuple."""
   try:
-    with open(os.ctermid(), 'r') as tty_instance:
-      length_width = struct.unpack(
-          'hh', fcntl.ioctl(tty_instance.fileno(), termios.TIOCGWINSZ, '1234'))
+    if USE_FCNTL:
+      with open(os.ctermid(), 'r') as tty_instance:
+        length_width = struct.unpack(
+            'hh', fcntl.ioctl(tty_instance.fileno(), termios.TIOCGWINSZ, '1234'))
+    else:
+      # Raise an OSError in Windows to move on to the next try/except block
+      raise OSError()
   except (IOError, OSError):
     try:
       length_width = (int(os.environ['LINES']),
