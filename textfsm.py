@@ -982,10 +982,10 @@ class TextFSM(object):
     # Lastly process line operators.
     if rule.line_op == 'Error':
       if rule.new_state:
-        raise TextFSMError('Error: %s. Rule_Line: %s. Raw_Line: %s.'
+        raise TextFSMError('Error: %s. Rule Line: %s. Input Line: %s.'
                            % (rule.new_state, rule.line_num, line))
 
-      raise TextFSMError('State Error raised. Rule_Line: %s. Raw_Line: %s'
+      raise TextFSMError('State Error raised. Rule Line: %s. Input Line: %s'
                          % (rule.line_num, line))
 
     elif rule.line_op == 'Continue':
