@@ -905,7 +905,7 @@ class TextFSM(object):
         for value in matched.groupdict():
           self._AssignVar(matched, value)
 
-        if self._Operations(rule):
+        if self._Operations(rule, line):
           # Not a Continue so check for state transition.
           if rule.new_state:
             if rule.new_state not in ('End', 'EOF'):
@@ -941,7 +941,7 @@ class TextFSM(object):
     if _value is not None:
         _value.AssignVar(matched.group(value))
 
-  def _Operations(self, rule):
+  def _Operations(self, rule, line):
     """Operators on the data record.
 
     Operators come in two parts and are a '.' separated pair:
@@ -959,6 +959,7 @@ class TextFSM(object):
 
     Args:
       rule: FSMRule object.
+      line: A string, the current input line.
 
     Returns:
       True if state machine should restart state with new line.
@@ -981,11 +982,11 @@ class TextFSM(object):
     # Lastly process line operators.
     if rule.line_op == 'Error':
       if rule.new_state:
-        raise TextFSMError('Error: %s. Line: %s.'
-                           % (rule.new_state, rule.line_num))
+        raise TextFSMError('Error: %s. Rule Line: %s. Input Line: %s.'
+                           % (rule.new_state, rule.line_num, line))
 
-      raise TextFSMError('State Error raised. Line: %s.'
-                         % (rule.line_num))
+      raise TextFSMError('State Error raised. Rule Line: %s. Input Line: %s'
+                         % (rule.line_num, line))
 
     elif rule.line_op == 'Continue':
       # Continue with current line without returning to the start of the state.
