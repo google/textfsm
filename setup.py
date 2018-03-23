@@ -24,6 +24,7 @@ setup(name='textfsm',
       maintainer='Google',
       maintainer_email='textfsm-dev@googlegroups.com',
       version=textfsm.__version__,
+      description='Python module for parsing semi-structured text into python tables.',
       url='https://github.com/google/textfsm',
       license='Apache License, Version 2.0',
       classifiers=[
