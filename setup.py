@@ -16,15 +16,25 @@
 
 """Setup script."""
 
-from setuptools import setup
+from setuptools import setup, find_packages
 import textfsm
+# To use a consistent encoding
+from codecs import open
+from os import path
 
+here = path.abspath(path.dirname(__file__))
+
+# Get the long description from the README file
+with open(path.join(here, 'README.md')) as f:
+    long_description = f.read()
 
 setup(name='textfsm',
       maintainer='Google',
       maintainer_email='textfsm-dev@googlegroups.com',
       version=textfsm.__version__,
       description='Python module for parsing semi-structured text into python tables.',
+      long_description=long_description,
+      long_description_content_type=text/markdown,
       url='https://github.com/google/textfsm',
       license='Apache License, Version 2.0',
       classifiers=[
