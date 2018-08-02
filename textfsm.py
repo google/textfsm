@@ -915,10 +915,7 @@ class TextFSM(object):
     result_dicts = []
 
     for row in result_lists:
-      result_dict = {}
-      for i in range(len(row)):
-        result_dict[self.header[i]] = row[i]
-      result_dicts.append(result_dict)
+      result_dicts.append(dict(zip(self.header, row)))
 
     return result_dicts
 
