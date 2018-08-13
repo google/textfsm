@@ -893,6 +893,32 @@ class TextFSM(object):
 
     return self._result
 
+  def ParseTextToDicts(self, *args, **kwargs):
+    """Calls ParseText and turns the result into list of dicts.
+
+    List items are dicts of rows, dict key is column header and value is column
+    value.
+
+    Args:
+      text: (str), Text to parse with embedded newlines.
+      eof: (boolean), Set to False if we are parsing only part of the file.
+            Suppresses triggering EOF state.
+
+    Raises:
+      TextFSMError: An error occurred within the FSM.
+
+    Returns:
+      List of dicts.
+    """
+
+    result_lists = self.ParseText(*args, **kwargs)
+    result_dicts = []
+
+    for row in result_lists:
+      result_dicts.append(dict(zip(self.header, row)))
+
+    return result_dicts
+
   def _CheckLine(self, line):
     """Passes the line through each rule until a match is made.
 

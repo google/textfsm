@@ -475,6 +475,65 @@ State1
     self.assertEqual(
         str(result), "[['one', 'two'], ['one', 'two']]")
 
+  def testParseTextToDicts(self):
+
+    # Trivial FSM, no records produced.
+    tplt = 'Value unused (.)\n\nStart\n  ^Trivial SFM\n'
+    t = textfsm.TextFSM(StringIO(tplt))
+
+    data = 'Non-matching text\nline1\nline 2\n'
+    self.assertFalse(t.ParseText(data))
+    # Matching.
+    data = 'Matching text\nTrivial SFM\nline 2\n'
+    self.assertFalse(t.ParseText(data))
+
+    # Simple FSM, One Variable no options.
+    tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> Next.Record\n\nEOF\n'
+    t = textfsm.TextFSM(StringIO(tplt))
+
+    # Matching one line.
+    # Tests 'Next' & 'Record' actions.
+    data = 'Matching text'
+    result = t.ParseTextToDicts(data)
+    self.assertEqual(str(result), "[{'boo': 'Matching text'}]")
+
+    # Matching two lines. Reseting FSM before Parsing.
+    t.Reset()
+    data = 'Matching text\nAnd again'
+    result = t.ParseTextToDicts(data)
+    self.assertEqual(str(result), "[{'boo': 'Matching text'}, {'boo': 'And again'}]")
+
+    # Two Variables and singular options.
+    tplt = ('Value Required boo (one)\nValue Filldown hoo (two)\n\n'
+            'Start\n  ^$boo -> Next.Record\n  ^$hoo -> Next.Record\n\n'
+            'EOF\n')
+    t = textfsm.TextFSM(StringIO(tplt))
+
+    # Matching two lines. Only one records returned due to 'Required' flag.
+    # Tests 'Filldown' and 'Required' options.
+    data = 'two\none'
+    result = t.ParseTextToDicts(data)
+    self.assertEqual(str(result), "[{'hoo': 'two', 'boo': 'one'}]")
+
+    t = textfsm.TextFSM(StringIO(tplt))
+    # Matching two lines. Two records returned due to 'Filldown' flag.
+    data = 'two\none\none'
+    t.Reset()
+    result = t.ParseTextToDicts(data)
+    self.assertEqual(
+        str(result), "[{'hoo': 'two', 'boo': 'one'}, {'hoo': 'two', 'boo': 'one'}]")
+
+    # Multiple Variables and options.
+    tplt = ('Value Required,Filldown boo (one)\n'
+            'Value Filldown,Required hoo (two)\n\n'
+            'Start\n  ^$boo -> Next.Record\n  ^$hoo -> Next.Record\n\n'
+            'EOF\n')
+    t = textfsm.TextFSM(StringIO(tplt))
+    data = 'two\none\none'
+    result = t.ParseTextToDicts(data)
+    self.assertEqual(
+        str(result), "[{'hoo': 'two', 'boo': 'one'}, {'hoo': 'two', 'boo': 'one'}]")
+
   def testParseNullText(self):
 
     # Simple FSM, One Variable no options.
