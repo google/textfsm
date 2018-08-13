@@ -687,10 +687,12 @@ State1
       data = " Bob: 32 NC\n Alice: 27 NY\n Jeff: 45 CA\nJulia\n\n"  # Julia should be parsed as "name" separately
       result = t.ParseText(data)
       self.assertEqual(
-          str(result), (
-               "[[[{'age': '32', 'name': 'Bob', 'state': 'NC'}, "
-               "{'age': '27', 'name': 'Alice', 'state': 'NY'}, "
-               "{'age': '45', 'name': 'Jeff', 'state': 'CA'}], 'Julia']]"
+          result, (
+              [[[
+                {'name': 'Bob', 'age': '32', 'state': 'NC'},
+                {'name': 'Alice', 'age': '27', 'state': 'NY'},
+                {'name': 'Jeff', 'age': '45', 'state': 'CA'}
+              ], 'Julia']]
       ))
 
   def testNestedNameConflict(self):
