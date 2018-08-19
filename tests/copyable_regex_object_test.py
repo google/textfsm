@@ -23,7 +23,7 @@ from __future__ import print_function
 import copy
 import unittest
 
-import copyable_regex_object
+from textfsm import copyable_regex_object
 
 
 class CopyableRegexObjectTest(unittest.TestCase):

@@ -25,8 +25,8 @@ import os
 import re
 import unittest
 
-import clitable
-import copyable_regex_object
+from textfsm import clitable
+from textfsm import copyable_regex_object
 from six.moves import StringIO
 
 

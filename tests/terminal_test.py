@@ -23,7 +23,7 @@ import unittest
 
 # pylint: disable=redefined-builtin
 from six.moves import range
-import terminal
+from textfsm import terminal
 
 
 class TerminalTest(unittest.TestCase):

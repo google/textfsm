@@ -29,9 +29,10 @@ import copy
 import os
 import re
 import threading
-import copyable_regex_object
 import textfsm
-import texttable
+
+from textfsm import copyable_regex_object
+from textfsm import texttable
 
 
 class Error(Exception):
