@@ -32,7 +32,7 @@ __version__ = '0.4.1'
 
 import getopt
 import inspect
-import re
+import regex
 import string
 import sys
 
@@ -306,18 +306,18 @@ class TextFSMValue(object):
       raise TextFSMTemplateError(
           "Invalid Value name '%s' or name too long." % self.name)
 
-    if (not re.match(r'^\(.*\)$', self.regex) or
+    if (not regex.match(r'^\(.*\)$', self.regex) or
         self.regex.count('(') != self.regex.count(')')):
       raise TextFSMTemplateError(
           "Value '%s' must be contained within a '()' pair." % self.regex)
 
-    self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
+    self.template = regex.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
 
     # Compile and store the regex object only on List-type values for use in nested matching
     if any(map(lambda x: isinstance(x, TextFSMOptions.List), self.options)):
         try:
-            self.compiled_regex = re.compile(self.regex)
-        except re.error as e:
+            self.compiled_regex = regex.compile(self.regex)
+        except regex.error as e:
             raise TextFSMTemplateError(str(e))
 
   def _AddOption(self, name):
@@ -360,12 +360,12 @@ class TextFSMValue(object):
 
 
 class CopyableRegexObject(object):
-  """Like a re.RegexObject, but can be copied."""
+  """Like a regex.RegexObject, but can be copied."""
   # pylint: disable=C6409
 
   def __init__(self, pattern):
     self.pattern = pattern
-    self.regex = re.compile(pattern)
+    self.regex = regex.compile(pattern)
 
   def match(self, *args, **kwargs):
     return self.regex.match(*args, **kwargs)
@@ -402,7 +402,7 @@ class TextFSMRule(object):
     line_num: Integer row number of Value.
   """
   # Implicit default is '(regexp) -> Next.NoRecord'
-  MATCH_ACTION = re.compile(r'(?P<match>.*)(\s->(?P<action>.*))')
+  MATCH_ACTION = regex.compile(r'(?P<match>.*)(\s->(?P<action>.*))')
 
   # The structure to the right of the '->'.
   LINE_OP = ('Continue', 'Next', 'Error')
@@ -418,11 +418,11 @@ class TextFSMRule(object):
   NEWSTATE_RE = r'(?P<new_state>\w+|\".*\")'
 
   # Compound operator (line and record) with optional new state.
-  ACTION_RE = re.compile(r'\s+%s(\s+%s)?$' % (OPERATOR_RE, NEWSTATE_RE))
+  ACTION_RE = regex.compile(r'\s+%s(\s+%s)?$' % (OPERATOR_RE, NEWSTATE_RE))
   # Record operator with optional new state.
-  ACTION2_RE = re.compile(r'\s+%s(\s+%s)?$' % (RECORD_OP_RE, NEWSTATE_RE))
+  ACTION2_RE = regex.compile(r'\s+%s(\s+%s)?$' % (RECORD_OP_RE, NEWSTATE_RE))
   # Default operators with optional new state.
-  ACTION3_RE = re.compile(r'(\s+%s)?$' % (NEWSTATE_RE))
+  ACTION3_RE = regex.compile(r'(\s+%s)?$' % (NEWSTATE_RE))
 
   def __init__(self, line, line_num=-1, var_map=None):
     """Initialise a new rule object.
@@ -468,7 +468,7 @@ class TextFSMRule(object):
     try:
       # Work around a regression in Python 2.6 that makes RE Objects uncopyable.
       self.regex_obj = CopyableRegexObject(self.regex)
-    except re.error:
+    except regex.error:
       raise TextFSMTemplateError(
           "Invalid regular expression: '%s'. Line: %s." %
           (self.regex, self.line_num))
@@ -478,29 +478,29 @@ class TextFSMRule(object):
       return
 
     # Attempt to match line.record operation.
-    action_re = self.ACTION_RE.match(match_action.group('action'))
+    action_re = self.ACTION_regex.match(match_action.group('action'))
     if not action_re:
       # Attempt to match record operation.
-      action_re = self.ACTION2_RE.match(match_action.group('action'))
+      action_re = self.ACTION2_regex.match(match_action.group('action'))
       if not action_re:
         # Math implicit defaults with an optional new state.
-        action_re = self.ACTION3_RE.match(match_action.group('action'))
+        action_re = self.ACTION3_regex.match(match_action.group('action'))
         if not action_re:
           # Last attempt, match an optional new state only.
           raise TextFSMTemplateError("Badly formatted rule '%s'. Line: %s." %
                                      (line, self.line_num))
 
     # We have an Line operator.
-    if 'ln_op' in action_re.groupdict() and action_re.group('ln_op'):
-      self.line_op = action_re.group('ln_op')
+    if 'ln_op' in action_regex.groupdict() and action_regex.group('ln_op'):
+      self.line_op = action_regex.group('ln_op')
 
     # We have a record operator.
-    if 'rec_op' in action_re.groupdict() and action_re.group('rec_op'):
-      self.record_op = action_re.group('rec_op')
+    if 'rec_op' in action_regex.groupdict() and action_regex.group('rec_op'):
+      self.record_op = action_regex.group('rec_op')
 
     # A new state was specified.
-    if 'new_state' in action_re.groupdict() and action_re.group('new_state'):
-      self.new_state = action_re.group('new_state')
+    if 'new_state' in action_regex.groupdict() and action_regex.group('new_state'):
+      self.new_state = action_regex.group('new_state')
 
     # Only 'Next' (or implicit 'Next') line operator can have a new_state.
     # But we allow error to have one as a warning message so we are left
@@ -512,7 +512,7 @@ class TextFSMRule(object):
 
     # Check that an error message is present only with the 'Error' operator.
     if self.line_op != 'Error' and self.new_state:
-      if not re.match(r'\w+', self.new_state):
+      if not regex.match(r'\w+', self.new_state):
         raise TextFSMTemplateError(
             'Alphanumeric characters only in state names. Line: %s.'
             % (self.line_num))
@@ -551,8 +551,8 @@ class TextFSM(object):
   """
   # Variable and State name length.
   MAX_NAME_LEN = 48
-  comment_regex = re.compile(r'^\s*#')
-  state_name_re = re.compile(r'^(\w+)$')
+  comment_regex = regex.compile(r'^\s*#')
+  state_name_re = regex.compile(r'^(\w+)$')
   _DEFAULT_OPTIONS = TextFSMOptions
 
   def __init__(self, template, options_class=_DEFAULT_OPTIONS):
@@ -659,7 +659,7 @@ class TextFSM(object):
     self._ClearRecord()
 
   def _Parse(self, template):
-    """Parses template file for FSM structure.
+    """Parses template file for FSM structuregex.
 
     Args:
       template: Valid template file.
@@ -775,7 +775,7 @@ class TextFSM(object):
       # First line is state definition
       if line and not self.comment_regex.match(line):
          # Ensure statename has valid syntax and is not a reserved word.
-        if (not self.state_name_re.match(line) or
+        if (not self.state_name_regex.match(line) or
             len(line) > self.MAX_NAME_LEN or
             line in TextFSMRule.LINE_OP or
             line in TextFSMRule.RECORD_OP):

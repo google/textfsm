@@ -16,16 +16,16 @@
 
 """Work around a regression in Python 2.6 that makes RegexObjects uncopyable."""
 
-import re
+import regex
 
 
 class CopyableRegexObject(object):
-  """Like a re.RegexObject, but can be copied."""
+  """Like a regex.RegexObject, but can be copied."""
   # pylint: disable=C6409
 
   def __init__(self, pattern):
     self.pattern = pattern
-    self.regex = re.compile(pattern)
+    self.regex = regex.compile(pattern)
 
   def match(self, *args, **kwargs):
     return self.regex.match(*args, **kwargs)

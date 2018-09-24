@@ -27,7 +27,7 @@ the TextFSM output parser.
 
 import copy
 import os
-import re
+import regex
 import threading
 import copyable_regex_object
 import textfsm
@@ -314,7 +314,7 @@ class CliTable(texttable.TextTable):
   def _PreParse(self, key, value):
     """Executed against each field of each row read from index table."""
     if key == 'Command':
-      return re.sub(r'(\[\[.+?\]\])', self._Completion, value)
+      return regex.sub(r'(\[\[.+?\]\])', self._Completion, value)
     else:
       return value
 

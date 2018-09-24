@@ -22,7 +22,7 @@ from __future__ import print_function
 
 import copy
 import os
-import re
+import regex
 import unittest
 
 import clitable
@@ -104,11 +104,11 @@ class UnitTestCliTable(unittest.TestCase):
   def testCompletion(self):
     """Tests '[[]]' syntax replacement."""
     indx = clitable.CliTable()
-    self.assertEqual('abc', re.sub(r'(\[\[.+?\]\])', indx._Completion, 'abc'))
+    self.assertEqual('abc', regex.sub(r'(\[\[.+?\]\])', indx._Completion, 'abc'))
     self.assertEqual('a(b(c)?)?',
-                     re.sub(r'(\[\[.+?\]\])', indx._Completion, 'a[[bc]]'))
+                     regex.sub(r'(\[\[.+?\]\])', indx._Completion, 'a[[bc]]'))
     self.assertEqual('a(b(c)?)? de(f)?',
-                     re.sub(r'(\[\[.+?\]\])', indx._Completion,
+                     regex.sub(r'(\[\[.+?\]\])', indx._Completion,
                             'a[[bc]] de[[f]]'))
 
   def testRepeatRead(self):

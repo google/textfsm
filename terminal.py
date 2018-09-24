@@ -28,7 +28,7 @@ __version__ = '0.1.1'
 import fcntl
 import getopt
 import os
-import re
+import regex
 import struct
 import sys
 import termios
@@ -100,7 +100,7 @@ ANSI_START = '\001'
 ANSI_END = '\002'
 
 
-sgr_re = re.compile(r'(%s?\033\[\d+(?:;\d+)*m%s?)' % (
+sgr_re = regex.compile(r'(%s?\033\[\d+(?:;\d+)*m%s?)' % (
     ANSI_START, ANSI_END))
 
 
@@ -159,12 +159,12 @@ def AnsiText(text, command_list=None, reset=True):
 
 def StripAnsiText(text):
   """Strip ANSI/SGR escape sequences from text."""
-  return sgr_re.sub('', text)
+  return sgr_regex.sub('', text)
 
 
 def EncloseAnsiText(text):
   """Enclose ANSI/SGR escape sequences with ANSI_START and ANSI_END."""
-  return sgr_re.sub(lambda x: ANSI_START + x.group(1) + ANSI_END, text)
+  return sgr_regex.sub(lambda x: ANSI_START + x.group(1) + ANSI_END, text)
 
 
 def TerminalSize():
@@ -195,7 +195,7 @@ def LineWrap(text, omit_sgr=False):
 
   def _SplitWithSgr(text_line):
     """Tokenise the line so that the sgr sequences can be omitted."""
-    token_list = sgr_re.split(text_line)
+    token_list = sgr_regex.split(text_line)
     text_line_list = []
     line_length = 0
     for (index, token) in enumerate(token_list):
@@ -203,7 +203,7 @@ def LineWrap(text, omit_sgr=False):
       if token is '':
         continue
 
-      if sgr_re.match(token):
+      if sgr_regex.match(token):
         # Add sgr escape sequences without splitting or counting length.
         text_line_list.append(token)
         text_line = ''.join(token_list[index +1:])
