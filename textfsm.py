@@ -478,29 +478,29 @@ class TextFSMRule(object):
       return
 
     # Attempt to match line.record operation.
-    action_re = self.ACTION_regex.match(match_action.group('action'))
+    action_re = self.ACTION_RE.match(match_action.group('action'))
     if not action_re:
       # Attempt to match record operation.
-      action_re = self.ACTION2_regex.match(match_action.group('action'))
+      action_re = self.ACTION2_RE.match(match_action.group('action'))
       if not action_re:
         # Math implicit defaults with an optional new state.
-        action_re = self.ACTION3_regex.match(match_action.group('action'))
+        action_re = self.ACTION3_RE.match(match_action.group('action'))
         if not action_re:
           # Last attempt, match an optional new state only.
           raise TextFSMTemplateError("Badly formatted rule '%s'. Line: %s." %
                                      (line, self.line_num))
 
     # We have an Line operator.
-    if 'ln_op' in action_regex.groupdict() and action_regex.group('ln_op'):
-      self.line_op = action_regex.group('ln_op')
+    if 'ln_op' in action_re.groupdict() and action_re.group('ln_op'):
+      self.line_op = action_re.group('ln_op')
 
     # We have a record operator.
-    if 'rec_op' in action_regex.groupdict() and action_regex.group('rec_op'):
-      self.record_op = action_regex.group('rec_op')
+    if 'rec_op' in action_re.groupdict() and action_re.group('rec_op'):
+      self.record_op = action_re.group('rec_op')
 
     # A new state was specified.
-    if 'new_state' in action_regex.groupdict() and action_regex.group('new_state'):
-      self.new_state = action_regex.group('new_state')
+    if 'new_state' in action_re.groupdict() and action_re.group('new_state'):
+      self.new_state = action_re.group('new_state')
 
     # Only 'Next' (or implicit 'Next') line operator can have a new_state.
     # But we allow error to have one as a warning message so we are left
