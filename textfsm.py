@@ -775,7 +775,7 @@ class TextFSM(object):
       # First line is state definition
       if line and not self.comment_regex.match(line):
          # Ensure statename has valid syntax and is not a reserved word.
-        if (not self.state_name_regex.match(line) or
+        if (not self.state_name_re.match(line) or
             len(line) > self.MAX_NAME_LEN or
             line in TextFSMRule.LINE_OP or
             line in TextFSMRule.RECORD_OP):
