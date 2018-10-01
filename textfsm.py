@@ -106,6 +106,7 @@ class TextFSMOptions(object):
     def OnAssignVar(self):
       """Called when a matched value is being assigned."""
 
+
     def OnGetValue(self):
       """Called when the value name is being requested."""
 
@@ -126,6 +127,13 @@ class TextFSMOptions(object):
   def GetOption(cls, name):
     """Returns the class of the requested option name."""
     return getattr(cls, name)
+
+  class Repeated(OptionBase):
+    """Will use regex module's 'captures' behavior to get all repeated
+     values instead of just the last value as re would."""
+
+    def OnAssignVar(self):
+      self.value.value = self.value.values_list
 
   class Required(OptionBase):
     """The Value must be non-empty for the row to be recorded."""
@@ -194,8 +202,8 @@ class TextFSMOptions(object):
           match = None
       # If the List-value regex has match-groups defined, add the resulting dict to the list
       # Otherwise, add the string that was matched
-      if match and match.groupdict():
-          self._value.append(match.groupdict())
+      if match and match.capturesdict():
+          self._value.append(match.capturesdict())
       else:
           self._value.append(self.value.value)
 
@@ -240,12 +248,14 @@ class TextFSMValue(object):
     self.options = []
     self.regex = None
     self.value = None
+    self.values_list = None
     self.fsm = fsm
     self._options_cls = options_class
 
   def AssignVar(self, value):
     """Assign a value to this Value."""
-    self.value = value
+    self.value = value[-1]
+    self.values_list = value
     # Call OnAssignVar on options.
     _ = [option.OnAssignVar() for option in self.options]
 
@@ -928,7 +938,7 @@ class TextFSM(object):
     for rule in self._cur_state:
       matched = self._CheckRule(rule, line)
       if matched:
-        for value in matched.groupdict():
+        for value in matched.capturesdict():
           self._AssignVar(matched, value)
 
         if self._Operations(rule, line):
@@ -965,7 +975,7 @@ class TextFSM(object):
     """
     _value = self._GetValue(value)
     if _value is not None:
-        _value.AssignVar(matched.group(value))
+        _value.AssignVar(matched.captures(value))
 
   def _Operations(self, rule, line):
     """Operators on the data record.
