@@ -808,7 +808,7 @@ State1
 
   def testInvalidRegexp(self):
 
-    tplt = 'Value boo (.$*)\n\nStart\n  ^$boo -> Next\n'
+    tplt = 'Value boo ([(\S+]))\n\nStart\n  ^$boo -> Next\n'
     self.assertRaises(textfsm.TextFSMTemplateError,
                       textfsm.TextFSM, StringIO(tplt))
 
@@ -856,6 +856,28 @@ Start
         "[['1', 'A2', 'B1'], ['2', 'A2', 'B3'], ['3', '', 'B3']]",
         str(result))
 
+
+  def testRepeated(self):
+    """Repeated option should work ok."""
+    tplt = """Value Repeated repeatedKey (\S+)
+Value Repeated repeatedValue (\S+)
+Value normalData (\S+)
+Value normalData2 (\S+)
+Value Repeated repeatedUnused (\S+)
+
+Start
+  ^${normalData} (${repeatedKey}:${repeatedValue} )*${normalData2} -> Record"""
+
+    data = """
+normal1 key1:value1 key2:value2 key3:value3 normal2 \n
+normal1 normal2 """
+
+    t = textfsm.TextFSM(StringIO(tplt))
+    result = t.ParseText(data)
+    self.assertEqual(
+      "[[['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'normal1', 'normal2', []],"
+      + " [[], [], 'normal1', 'normal2', []]]",
+      str(result))
 
 if __name__ == '__main__':
   unittest.main()
