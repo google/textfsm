@@ -106,7 +106,6 @@ class TextFSMOptions(object):
     def OnAssignVar(self):
       """Called when a matched value is being assigned."""
 
-
     def OnGetValue(self):
       """Called when the value name is being requested."""
 
