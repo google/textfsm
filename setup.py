@@ -45,6 +45,6 @@ setup(name='textfsm',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
           'Topic :: Software Development :: Libraries'],
-      requires=['six'],
+      requires=['six', 'regex'],
       py_modules=['clitable', 'textfsm', 'copyable_regex_object',
                   'texttable', 'terminal'])
