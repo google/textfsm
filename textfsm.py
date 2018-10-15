@@ -135,6 +135,15 @@ class TextFSMOptions(object):
     def OnAssignVar(self):
       self.value.value = self.value.values_list
 
+    def OnCreateOptions(self):
+      self.value.value = []
+
+    def OnClearVar(self):
+      self.value.value = []
+
+    def OnClearAllVar(self):
+      self.value.value = []
+
   class Required(OptionBase):
     """The Value must be non-empty for the row to be recorded."""
 
@@ -203,7 +212,7 @@ class TextFSMOptions(object):
       # If the List-value regex has match-groups defined, add the resulting dict to the list
       # Otherwise, add the string that was matched
       if match and match.capturesdict():
-          self._value.append(match.capturesdict())
+          self._value.append({x: match.capturesdict()[x][-1] for x in match.capturesdict()})
       else:
           self._value.append(self.value.value)
 
@@ -254,7 +263,10 @@ class TextFSMValue(object):
 
   def AssignVar(self, value):
     """Assign a value to this Value."""
-    self.value = value[-1]
+    try:
+      self.value = value[-1]
+    except IndexError:
+      self.value = ''
     self.values_list = value
     # Call OnAssignVar on options.
     _ = [option.OnAssignVar() for option in self.options]
