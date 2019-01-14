@@ -1,5 +1,5 @@
 
-class VisualDebugger:
+class VisualDebugger(object):
 
     def __init__(self, fsm, parse_history):
         self.fsm = fsm
