@@ -1,4 +1,4 @@
-
+from collections import namedtuple
 class VisualDebugger(object):
 
     def __init__(self, fsm, parse_history):
@@ -42,21 +42,6 @@ class VisualDebugger(object):
             self.add_prelude_boilerplate(f)
             self.add_css_styling(f)
 
-
-class ParseHistory:
-
-    def __init__(self):
-         self.line_histories = []
-
-    class LineHistory:
-
-        def __init__(self, state, line_string):
-            self.state = state
-            self.line_string = line_string
-            self.rule_matches = []
-
-        def add_rule_match(self, rule, match):
-            self.rule_matches.append((rule, match))
 
 
 

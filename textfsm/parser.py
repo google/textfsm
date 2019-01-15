@@ -28,6 +28,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from debugger import LineHistory
+from debugger import MatchedPair
+
 import getopt
 import inspect
 import re
@@ -568,6 +571,10 @@ class TextFSM(object):
     self._cur_state = None
     # Name of the current state.
     self._cur_state_name = None
+    # Visual debug mode flag
+    self.visual_debug = True
+    # Keep track of parse history when in debug mode.
+    self.parse_history = []
 
     # Read and parse FSM definition.
     # Restore the file pointer once done.
@@ -923,9 +930,16 @@ class TextFSM(object):
     Args:
       line: A string, the current input line.
     """
+    line_history = None
+    if self.visual_debug:
+      line_history = LineHistory(line, self._cur_state_name, [])
+
     for rule in self._cur_state:
       matched = self._CheckRule(rule, line)
       if matched:
+        if self.visual_debug and line_history:
+          line_history.matches.append(MatchedPair(matched, rule))
+
         for value in matched.groupdict():
           self._AssignVar(matched, value)
 
@@ -936,6 +950,9 @@ class TextFSM(object):
               self._cur_state = self.states[rule.new_state]
             self._cur_state_name = rule.new_state
           break
+
+    if self.visual_debug and line_history:
+      self.parse_history.append(line_history)
 
   def _CheckRule(self, rule, line):
     """Check a line against the given rule.
@@ -1074,6 +1091,8 @@ def main(argv=None):
         cli_input = f.read()
 
       table = fsm.ParseText(cli_input)
+      for line in fsm.parse_history:
+        print(line.state)
       print('FSM Table:')
       result = str(fsm.header) + '\n'
       for line in table:
