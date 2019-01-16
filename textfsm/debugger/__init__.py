@@ -1,7 +1,7 @@
 from collections import namedtuple
 
-LINE_SATURATION = 70
-LINE_LIGHTNESS = 75
+LINE_SATURATION = 40
+LINE_LIGHTNESS = 60
 MATCH_SATURATION = 100
 MATCH_LIGHTNESS = 30
 
@@ -16,8 +16,14 @@ class MatchedPair(namedtuple('MatchPair', ['match_obj', 'rule'])):
     pass
 
 
-class StartStopIndex(namedtuple('StartStopIndex', ['start', 'stop'])):
-    pass
+class StartStopIndex(namedtuple('StartStopIndex', ['start', 'end'])):
+
+    def __eq__(self, other):
+        return self.start == other.start and self.end == other.end
+
+    def __gt__(self, other):
+        return self.start > other.start
+
 
 
 class VisualDebugger(object):
@@ -63,6 +69,11 @@ class VisualDebugger(object):
             "<style type='text/css'>\n",
             "body {\n",
             "font-family: Arial, Helvetica, sans-serif;\n",
+            "background-color: hsl(40, 1%, 25%)\n"
+            "}\n",
+            "h4 {\n",
+            "font-family: Arial, Helvetica, sans-serif;\n",
+            "color: white;\n",
             "}\n",
         ]
 
@@ -78,6 +89,7 @@ class VisualDebugger(object):
                     LINE_LIGHTNESS
                 ),
                 "border-radius: {}px;\n".format(BORDER_RADIUS),
+                "padding: 0px 10px;\n",
                 "}\n"
             ]
             html_file.writelines(state_block)
@@ -108,11 +120,50 @@ class VisualDebugger(object):
 
         html_file.writelines(css_closing_lines)
 
+    def merge_indexes(self, match_index_pairs):
+
+        def overlapping(index_a, index_b):
+            if index_a.end > index_b.start and index_a.start < index_b.end:
+                return True
+            if index_a.start < index_b.end and index_b.start < index_a.end:
+                return True
+            if index_a.start < index_b.start and index_a.end > index_b.end:
+                return True
+            if index_b.start < index_a.start and index_b.end > index_a.end:
+                return True
+
+        def merge_pairs(index_a, index_b):
+            start = 0
+            if index_a.start < index_b.start:
+                start = index_a.start
+            else:
+                start = index_b.start
+            if index_a.end < index_b.end:
+                end = index_b.end
+            else:
+                end = index_a.end
+            return StartStopIndex(start, end)
+
+        for pair in match_index_pairs:
+            overlap = False
+            match_index_pairs.remove(pair)
+            for check_pair in match_index_pairs:
+                if overlapping(pair, check_pair):
+                    overlap = True
+                    match_index_pairs.remove(check_pair)
+                    match_index_pairs.append(merge_pairs(pair, check_pair))
+                    break
+            if not overlap:
+                match_index_pairs.append(pair)
+
     def add_cli_text(self, html_file):
+
+
 
         end_head_start_body = [
             "</head>\n",
             "<body>\n",
+            "<h4>CLI Text:</h4>\n"
             "<pre>\n"
         ]
 
@@ -125,21 +176,47 @@ class VisualDebugger(object):
         for line_history in self.fsm.parse_history:
 
             match_index_pairs = []
+            # for match in line_history.matches:
+            #     if len(match.match_obj.groups()) > 0:
+            #         built_line = lines[l_count][:match.match_obj.start(1)]
+            #         for i in range(0, len(match.match_obj.groups())):
+            #             built_line += (
+            #                 "<span class='{}-match'>".format(line_history.state)
+            #                 + lines[l_count][match.match_obj.start(i):match.match_obj.end(i)]
+            #                 + "</span>"
+            #
+            #             )
+            #         built_line += lines[l_count][match.match_obj.end(1):]
+            #         lines[l_count] = built_line
+
+            # Flatten match index structure
             for match in line_history.matches:
                 if len(match.match_obj.groups()) > 0:
-                    built_line = lines[l_count][:match.match_obj.start(1)]
-                    for i in range(0, len(match.match_obj.groups())):
-                        built_line += (
-                            "<span class='{}-match'>".format(line_history.state)
-                            + lines[l_count][match.match_obj.start(i):match.match_obj.end(i)]
-                            + "</span>"
-
+                    for i in range(1, len(match.match_obj.groups()) + 1):
+                        match_index_pairs.append(
+                            StartStopIndex(
+                                match.match_obj.start(i),
+                                match.match_obj.end(i)
+                            )
                         )
-                    built_line += lines[l_count][match.match_obj.end(1):]
-                    lines[l_count] = built_line
-                else:
-                    print("ZERO")
-                    print(match.match_obj.groups())
+
+            if match_index_pairs:
+                # Merge indexes if there is any overlap
+                self.merge_indexes(match_index_pairs)
+                match_index_pairs.sort()
+                built_line = ""
+                prev_end = 0
+                for index in match_index_pairs:
+                    built_line += (
+                          lines[l_count][prev_end:index.start]
+                          + "<span class='{}-match'>".format(line_history.state)
+                          + lines[l_count][index.start:index.end]
+                          + "</span>"
+                    )
+                    prev_end = index.end
+
+                built_line += lines[l_count][match_index_pairs[-1].end:]
+                lines[l_count] = built_line
 
             lines[l_count] = ("<span class='{}'>".format(line_history.state)
                               + lines[l_count] + "</span>")
