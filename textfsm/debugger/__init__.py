@@ -3,7 +3,7 @@ from collections import namedtuple
 LINE_SATURATION = 70
 LINE_LIGHTNESS = 75
 MATCH_SATURATION = 100
-MATCH_LIGHTNESS = 50
+MATCH_LIGHTNESS = 30
 
 BORDER_RADIUS = 5
 
@@ -95,6 +95,8 @@ class VisualDebugger(object):
                             MATCH_LIGHTNESS
                         ),
                         "border-radius: {}px;\n".format(BORDER_RADIUS),
+                        "font - weight: bold;\n"
+                        "color: white;\n",
                         "}\n"
                     ]
                     state_matches.add(line.state)
@@ -121,12 +123,29 @@ class VisualDebugger(object):
 
         l_count = 0
         for line_history in self.fsm.parse_history:
-            lines[l_count] = ("<span class='{}'>".format(line_history.state) + lines[l_count] + "</span>")
+
+            match_index_pairs = []
+            for match in line_history.matches:
+                if len(match.match_obj.groups()) > 0:
+                    built_line = lines[l_count][:match.match_obj.start(1)]
+                    for i in range(0, len(match.match_obj.groups())):
+                        built_line += (
+                            "<span class='{}-match'>".format(line_history.state)
+                            + lines[l_count][match.match_obj.start(i):match.match_obj.end(i)]
+                            + "</span>"
+
+                        )
+                    built_line += lines[l_count][match.match_obj.end(1):]
+                    lines[l_count] = built_line
+                else:
+                    print("ZERO")
+                    print(match.match_obj.groups())
+
+            lines[l_count] = ("<span class='{}'>".format(line_history.state)
+                              + lines[l_count] + "</span>")
             l_count += 1
-            # match_index_pairs = []
-            # for match in line_history.matches:
-            #     print(len(match.match_obj.groups()))
-            #     print(match.match_obj.groups())
+
+
 
         end_body_end_html = [
             "</pre>\n",
