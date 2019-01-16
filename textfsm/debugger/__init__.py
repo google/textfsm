@@ -160,14 +160,23 @@ class VisualDebugger(object):
 
 
 
-        end_head_start_body = [
+        cli_text_prelude = [
             "</head>\n",
-            "<body>\n",
+            "<body>",
+            "<h4>States:</h4>\n"
+        ]
+
+        for state in self.state_colormap.keys():
+            cli_text_prelude += [
+                "<button class='{}'>{}</button>\n".format(state, state)
+            ]
+
+        cli_text_prelude += [
             "<h4>CLI Text:</h4>\n"
             "<pre>\n"
         ]
 
-        html_file.writelines(end_head_start_body)
+        html_file.writelines(cli_text_prelude)
 
         lines = self.cli_text.splitlines()
         lines = [line + '\n' for line in lines]
@@ -176,18 +185,6 @@ class VisualDebugger(object):
         for line_history in self.fsm.parse_history:
 
             match_index_pairs = []
-            # for match in line_history.matches:
-            #     if len(match.match_obj.groups()) > 0:
-            #         built_line = lines[l_count][:match.match_obj.start(1)]
-            #         for i in range(0, len(match.match_obj.groups())):
-            #             built_line += (
-            #                 "<span class='{}-match'>".format(line_history.state)
-            #                 + lines[l_count][match.match_obj.start(i):match.match_obj.end(i)]
-            #                 + "</span>"
-            #
-            #             )
-            #         built_line += lines[l_count][match.match_obj.end(1):]
-            #         lines[l_count] = built_line
 
             # Flatten match index structure
             for match in line_history.matches:
