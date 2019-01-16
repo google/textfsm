@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 LINE_SATURATION = 70
-LINE_LIGHTNESS = 90
+LINE_LIGHTNESS = 75
 MATCH_SATURATION = 100
 MATCH_LIGHTNESS = 50
 
@@ -13,6 +13,10 @@ class LineHistory(namedtuple('LineHistory', ['line', 'state', 'matches'])):
 
 
 class MatchedPair(namedtuple('MatchPair', ['match_obj', 'rule'])):
+    pass
+
+
+class StartStopIndex(namedtuple('StartStopIndex', ['start', 'stop'])):
     pass
 
 
@@ -78,10 +82,23 @@ class VisualDebugger(object):
             ]
             html_file.writelines(state_block)
 
+        # Build and write state match styling CSS
+        state_matches = set()
         for line in self.fsm.parse_history:
             if line.matches:
-                for matched in line.matches:
-                    print(matched.rule.regex)
+                if line.state not in state_matches:
+                    match_block = [
+                        ".{}-match{{\n".format(line.state),
+                        self.hsl_css(
+                            self.state_colormap[line.state],
+                            MATCH_SATURATION,
+                            MATCH_LIGHTNESS
+                        ),
+                        "border-radius: {}px;\n".format(BORDER_RADIUS),
+                        "}\n"
+                    ]
+                    state_matches.add(line.state)
+                    html_file.writelines(match_block)
 
         css_closing_lines = [
             "</style>\n"
@@ -89,11 +106,44 @@ class VisualDebugger(object):
 
         html_file.writelines(css_closing_lines)
 
+    def add_cli_text(self, html_file):
+
+        end_head_start_body = [
+            "</head>\n",
+            "<body>\n",
+            "<pre>\n"
+        ]
+
+        html_file.writelines(end_head_start_body)
+
+        lines = self.cli_text.splitlines()
+        lines = [line + '\n' for line in lines]
+
+        l_count = 0
+        for line_history in self.fsm.parse_history:
+            lines[l_count] = ("<span class='{}'>".format(line_history.state) + lines[l_count] + "</span>")
+            l_count += 1
+            # match_index_pairs = []
+            # for match in line_history.matches:
+            #     print(len(match.match_obj.groups()))
+            #     print(match.match_obj.groups())
+
+        end_body_end_html = [
+            "</pre>\n",
+            "</body>\n",
+            "</html>\n"
+        ]
+
+        html_file.writelines(lines)
+
+        html_file.writelines(end_body_end_html)
+
     def build_debug_html(self):
         with open("debug.html", "w+") as f:
             self.add_prelude_boilerplate(f)
             self.build_state_colors()
             self.add_css_styling(f)
+            self.add_cli_text(f)
 
 
 
