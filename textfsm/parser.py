@@ -28,14 +28,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from debugger import LineHistory
-from debugger import MatchedPair
-
 import getopt
 import inspect
 import re
 import string
 import sys
+
+from debugger import MatchedPair
+from debugger import LineHistory
+from debugger import VisualDebugger
 
 
 class Error(Exception):
@@ -1091,8 +1092,11 @@ def main(argv=None):
         cli_input = f.read()
 
       table = fsm.ParseText(cli_input)
-      for line in fsm.parse_history:
-        print(line.state)
+
+      if fsm.visual_debug:
+        debugger = VisualDebugger(fsm, cli_input)
+        debugger.build_debug_html()
+
       print('FSM Table:')
       result = str(fsm.header) + '\n'
       for line in table:
