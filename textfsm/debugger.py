@@ -77,6 +77,15 @@ class VisualDebugger(object):
               font-family: Arial, Helvetica, sans-serif;
               color: white;
             }
+            .regex {
+                background-color: silver;
+                border: 2px;
+                border-style: solid;
+                border-color: black;
+                display: none;
+                border-radius: 5px;
+                padding: 0px 10px;
+            }
             ''')
 
         html_file.writelines(css_prelude_lines)
@@ -97,8 +106,8 @@ class VisualDebugger(object):
             html_file.writelines(state_block)
 
         # Build and write state match styling CSS
-        state_matches = set()
         new_parse_history = []
+        l_count = 0
         for line in self.fsm.parse_history:
             
             match_index_pairs = []
@@ -118,10 +127,11 @@ class VisualDebugger(object):
             match_index_pairs.sort()
             line = line._replace(match_index_pairs=match_index_pairs)
             new_parse_history.append(line)
-            if line.matches:
-                if line.state not in state_matches:
+            if line.match_index_pairs:
+                match_count = 0
+                for index_pair in line.match_index_pairs:
                     match_block = [
-                        ".{}-match{{\n".format(line.state),
+                        ".{}-match-{}-{}{{\n".format(line.state, l_count, match_count),
                         self.hsl_css(
                             self.state_colormap[line.state],
                             MATCH_SATURATION,
@@ -131,11 +141,14 @@ class VisualDebugger(object):
                         "  font-weight: bold;\n"
                         "  color: white;\n",
                         "  padding: 0px 5px;\n",
-                        "}\n"
+                        "}\n",
+                        ".{}-match-{}-{}:hover + .regex {{\n".format(line.state, l_count, match_count),
+                        "  display: inline;\n",
+                        "}\n"   
                     ]
-                    state_matches.add(line.state)
                     html_file.writelines(match_block)
-
+                    match_count += 1
+            l_count += 1
         self.fsm.parse_history = new_parse_history
 
         css_closing_lines = [
@@ -205,18 +218,19 @@ class VisualDebugger(object):
         l_count = 0
         for line_history in self.fsm.parse_history:
             if line_history.match_index_pairs:
-                print("GOT PAIRS")
                 # Merge indexes if there is any overlap
                 built_line = ""
                 prev_end = 0
+                match_count = 0
                 for index in line_history.match_index_pairs:
                     built_line += (
                           lines[l_count][prev_end:index.start]
-                          + "<span class='{}-match'>".format(line_history.state)
+                          + "<span class='{}-match-{}-{}'>".format(line_history.state, l_count, match_count)
                           + lines[l_count][index.start:index.end]
-                          + "</span>"
+                          + "</span><span class='regex'>{}</span>".format(self.fsm.value_map[index.value])
                     )
                     prev_end = index.end
+                    match_count += 1
 
                 built_line += lines[l_count][line_history.match_index_pairs[-1].end:]
                 lines[l_count] = built_line

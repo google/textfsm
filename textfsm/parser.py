@@ -933,7 +933,7 @@ class TextFSM(object):
     """
     line_history = None
     if self.visual_debug:
-      line_history = LineHistory(line, self._cur_state_name, [])
+      line_history = LineHistory(line, self._cur_state_name, [], [])
 
     for rule in self._cur_state:
       matched = self._CheckRule(rule, line)
