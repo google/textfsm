@@ -1,4 +1,5 @@
 from collections import namedtuple
+from textwrap import dedent
 
 LINE_SATURATION = 40
 LINE_LIGHTNESS = 60
@@ -16,7 +17,7 @@ class MatchedPair(namedtuple('MatchPair', ['match_obj', 'rule'])):
     pass
 
 
-class StartStopIndex(namedtuple('StartStopIndex', ['start', 'end'])):
+class StartStopIndex(namedtuple('StartStopIndex', ['start', 'end', 'value'])):
 
     def __eq__(self, other):
         return self.start == other.start and self.end == other.end
@@ -35,15 +36,15 @@ class VisualDebugger(object):
 
     @staticmethod
     def add_prelude_boilerplate(html_file):
-        prelude_lines = [
-            "<!DOCTYPE html>\n",
-            "<html>\n",
-            "<head>\n",
-            "<meta charset='UTF-8'>\n",
-            "<title>visual debugger</title>\n"
-        ]
+        prelude_lines = dedent('''
+            <!DOCTYPE html>
+              <html>
+                <head>
+                  <meta charset='UTF-8'>
+                  <title>visual debugger</title>
+            ''')
 
-        html_file.writelines(prelude_lines)
+        html_file.write(prelude_lines)
 
     def build_state_colors(self):
         h = 0
@@ -55,27 +56,28 @@ class VisualDebugger(object):
             self.state_colormap[state_name] = h
             used_colors.add(h)
             h = (h + separation) % 360
-            if h == 0:
+            if h == 0 or h > 360:
+                h = 0
                 separation -= 10
                 if separation == 0:
                     separation = 30
 
     @staticmethod
     def hsl_css(h, s, l):
-        return "background-color: hsl({},{}%,{}%);\n".format(h, s, l)
+        return "  background-color: hsl({},{}%,{}%);\n".format(h, s, l)
 
     def add_css_styling(self, html_file):
-        css_prelude_lines = [
-            "<style type='text/css'>\n",
-            "body {\n",
-            "font-family: Arial, Helvetica, sans-serif;\n",
-            "background-color: hsl(40, 1%, 25%)\n"
-            "}\n",
-            "h4 {\n",
-            "font-family: Arial, Helvetica, sans-serif;\n",
-            "color: white;\n",
-            "}\n",
-        ]
+        css_prelude_lines = dedent('''
+            <style type='text/css'>
+            body {
+              font-family: Arial, Helvetica, sans-serif;
+              background-color: hsl(40, 1%, 25%)
+            }
+            h4 {
+              font-family: Arial, Helvetica, sans-serif;
+              color: white;
+            }
+            ''')
 
         html_file.writelines(css_prelude_lines)
 
@@ -88,8 +90,8 @@ class VisualDebugger(object):
                     LINE_SATURATION,
                     LINE_LIGHTNESS
                 ),
-                "border-radius: {}px;\n".format(BORDER_RADIUS),
-                "padding: 0px 10px;\n",
+                "  border-radius: {}px;\n".format(BORDER_RADIUS),
+                "  padding: 0px 10px;\n",
                 "}\n"
             ]
             html_file.writelines(state_block)
@@ -106,9 +108,10 @@ class VisualDebugger(object):
                             MATCH_SATURATION,
                             MATCH_LIGHTNESS
                         ),
-                        "border-radius: {}px;\n".format(BORDER_RADIUS),
-                        "font - weight: bold;\n"
-                        "color: white;\n",
+                        "  border-radius: {}px;\n".format(BORDER_RADIUS),
+                        "  font-weight: bold;\n"
+                        "  color: white;\n",
+                        "  padding: 0px 5px;\n",
                         "}\n"
                     ]
                     state_matches.add(line.state)
@@ -142,7 +145,7 @@ class VisualDebugger(object):
                 end = index_b.end
             else:
                 end = index_a.end
-            return StartStopIndex(start, end)
+            return StartStopIndex(start, end, [index_a.value, index_b.value])
 
         for pair in match_index_pairs:
             overlap = False
@@ -157,9 +160,6 @@ class VisualDebugger(object):
                 match_index_pairs.append(pair)
 
     def add_cli_text(self, html_file):
-
-
-
         cli_text_prelude = [
             "</head>\n",
             "<body>",
@@ -168,7 +168,7 @@ class VisualDebugger(object):
 
         for state in self.state_colormap.keys():
             cli_text_prelude += [
-                "<button class='{}'>{}</button>\n".format(state, state)
+                "<button style='font-weight: bold;'class='{}'>{}</button>\n".format(state, state)
             ]
 
         cli_text_prelude += [
@@ -186,16 +186,18 @@ class VisualDebugger(object):
 
             match_index_pairs = []
 
+            print(l_count)
             # Flatten match index structure
             for match in line_history.matches:
-                if len(match.match_obj.groups()) > 0:
-                    for i in range(1, len(match.match_obj.groups()) + 1):
-                        match_index_pairs.append(
-                            StartStopIndex(
-                                match.match_obj.start(i),
-                                match.match_obj.end(i)
-                            )
+                for key in match.match_obj.groupdict().keys():
+                    match_index_pairs.append(
+                        StartStopIndex(
+                            match.match_obj.start(key),
+                            match.match_obj.end(key),
+                            key
                         )
+                    )
+                    print(self.fsm.value_map[key])
 
             if match_index_pairs:
                 # Merge indexes if there is any overlap
@@ -218,8 +220,6 @@ class VisualDebugger(object):
             lines[l_count] = ("<span class='{}'>".format(line_history.state)
                               + lines[l_count] + "</span>")
             l_count += 1
-
-
 
         end_body_end_html = [
             "</pre>\n",
