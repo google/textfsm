@@ -47,20 +47,10 @@ class VisualDebugger(object):
         html_file.write(prelude_lines)
 
     def build_state_colors(self):
-        h = 60
-        separation = 30
-        used_colors = set()
+        cntr = 1
         for state_name in self.fsm.states.keys():
-            while h in used_colors:
-                h = (h + separation) % 360
-            self.state_colormap[state_name] = h
-            used_colors.add(h)
-            h = (h + separation) % 360
-            if h == 0 or h > 360:
-                h = 0
-                separation -= 10
-                if separation == 0:
-                    separation = 30
+            self.state_colormap[state_name] = (67 * cntr) % 360
+            cntr += 1
 
     @staticmethod
     def hsl_css(h, s, l):
@@ -71,11 +61,14 @@ class VisualDebugger(object):
             <style type='text/css'>
             body {
               font-family: Arial, Helvetica, sans-serif;
-              background-color: hsl(40, 1%, 25%)
+              background-color: hsl(40, 1%, 25%);
+              margin: 0;
+              padding: 0;
             }
             h4 {
               font-family: Arial, Helvetica, sans-serif;
               color: white;
+              margin-top: 0;
             }
             .regex {
                 background-color: silver;
@@ -85,6 +78,17 @@ class VisualDebugger(object):
                 display: none;
                 border-radius: 5px;
                 padding: 0px 10px;
+            }
+            .cli-title{
+                padding-top: 100px;
+            }
+            .states{
+                position: fixed;
+                background-color: dimgray;
+                width: 100%;
+                padding: 10px;
+                margin-top: 0;
+                box-shadow: 0px 3px 8px #000000;
             }
             ''')
 
@@ -196,7 +200,7 @@ class VisualDebugger(object):
     def add_cli_text(self, html_file):
         cli_text_prelude = [
             "</head>\n",
-            "<body>",
+            "<header class='states'>",
             "<h4>States:</h4>\n"
         ]
 
@@ -206,7 +210,9 @@ class VisualDebugger(object):
             ]
 
         cli_text_prelude += [
-            "<h4>CLI Text:</h4>\n"
+            "</header\n",
+            "<body>\n",
+            "<h4 class='cli-title'>CLI Text:</h4>\n",
             "<pre>\n"
         ]
 
