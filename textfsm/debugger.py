@@ -47,7 +47,7 @@ class VisualDebugger(object):
         html_file.write(prelude_lines)
 
     def build_state_colors(self):
-        h = 0
+        h = 60
         separation = 30
         used_colors = set()
         for state_name in self.fsm.states.keys():
@@ -223,15 +223,20 @@ class VisualDebugger(object):
                 prev_end = 0
                 match_count = 0
                 for index in line_history.match_index_pairs:
+                    if index.start < 0 or index.end < 0:
+                        continue
                     built_line += (
                           lines[l_count][prev_end:index.start]
                           + "<span class='{}-match-{}-{}'>".format(line_history.state, l_count, match_count)
                           + lines[l_count][index.start:index.end]
-                          + "</span><span class='regex'>{}</span>".format(self.fsm.value_map[index.value])
+                          + "</span><span class='regex'>{} >> {}</span>".format(self.fsm.value_map[index.value], index.value)
                     )
                     prev_end = index.end
                     match_count += 1
 
+                if l_count == 4:
+                    print(line_history.match_index_pairs)
+                    print(built_line)
                 built_line += lines[l_count][line_history.match_index_pairs[-1].end:]
                 lines[l_count] = built_line
                 
