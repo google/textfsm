@@ -20,6 +20,8 @@ templates on the same data in order to create different tables (or views).
 TextFSM was developed internally at Google and released under the Apache 2.0
 licence for the benefit of the wider community.
 
+[**See documentation for more details.**](https://github.com/google/textfsm/wiki/TextFSM)
+
 Before contributing
 -------------------
 If you are not a Google employee, our lawyers insist that you sign a Contributor
