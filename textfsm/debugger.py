@@ -207,11 +207,11 @@ class VisualDebugger(object):
 
     for state in self.state_colormap.keys():
       cli_text_prelude += [
-        "<button style='font-weight: bold;'class='{}'>{}</button>\n".format(state, state)
+        "<button style='font-weight: bold;' class='{}'>{}</button>\n".format(state, state)
       ]
 
     cli_text_prelude += [
-      "</header\n",
+      "</header>\n",
       "<body>\n",
       "<h4 class='cli-title'>CLI Text:</h4>\n",
       "<pre>\n"
@@ -232,27 +232,33 @@ class VisualDebugger(object):
         for index in line_history.match_index_pairs:
           if index.start < 0 or index.end < 0:
             continue
+
+          # Strip out useless pattern format characters
           value_pattern = self.fsm.value_map[index.value]
-          regex = re.sub('^\(\?P<.*?>', '', value_pattern)[:-1]
+          regex = re.sub('\?P<.*?>', '', value_pattern).replace('<', '&lt').replace('>', '&gt')
+
+          # Build section of match and escape HTML tag chevrons if present
           built_line += (
-              lines[l_count][prev_end:index.start]
+              lines[l_count][prev_end:index.start].replace('<', '&lt').replace('>', '&gt')
               + "<span class='{}-match-{}-{}'>".format(line_history.state, l_count, match_count)
-              + lines[l_count][index.start:index.end]
+              + lines[l_count][index.start:index.end].replace('<', '&lt').replace('>', '&gt')
               + "</span><span class='regex'>{} >> {}</span>".format(regex, index.value)
           )
           prev_end = index.end
           match_count += 1
 
-        if l_count == 4:
-          print(line_history.match_index_pairs)
-          print(built_line)
-        built_line += lines[l_count][line_history.match_index_pairs[-1].end:]
+        built_line += lines[l_count][line_history.match_index_pairs[-1].end:].replace('<', '&lt').replace('>', '&gt')
         lines[l_count] = built_line
+      else:
+        # Escape HTML tag chevrons if present
+        lines[l_count] = lines[l_count].replace('<', '&lt').replace('>', '&gt')
 
+      # Add final span wrapping tag for line state color
       lines[l_count] = ("<span class='{}'>".format(line_history.state)
                         + lines[l_count] + "</span>")
       l_count += 1
 
+    # Close off document
     end_body_end_html = [
       "</pre>\n",
       "</body>\n",
