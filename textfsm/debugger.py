@@ -136,7 +136,7 @@ class VisualDebugger(object):
           LINE_SATURATION,
           LINE_LIGHTNESS
         ),
-        "  border-radius: 5 px;\n",
+        "  border-radius: 5px;\n",
         "  padding: 0 10px;\n",
         "}\n"
       ]
