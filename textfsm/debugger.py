@@ -1,3 +1,30 @@
+#!/usr/bin/python
+#
+# Copyright 2011 Google Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+#     Unless required by applicable law or agreed to in writing, software
+#     distributed under the License is distributed on an "AS IS" BASIS,
+#     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#     See the License for the specific language governing permissions and
+#     limitations under the License.
+#
+
+""" Visual Debugger
+
+Provides a HTML-based debugging tool that allows authors of templates
+to view the behavior of templates when applied to some example CLI text.
+State changes are represented with color coding such that state
+transitions are clearly represented during parsing.
+
+Matches on lines are highlighted to show extracted values and hovering
+over a match shows the value and corresponding regex that was matched.
+"""
 from collections import namedtuple
 from textwrap import dedent
 
@@ -7,8 +34,6 @@ LINE_SATURATION = 40
 LINE_LIGHTNESS = 60
 MATCH_SATURATION = 100
 MATCH_LIGHTNESS = 30
-
-BORDER_RADIUS = 5
 
 
 class LineHistory(namedtuple('LineHistory', ['line', 'state', 'matches', 'match_index_pairs'])):
@@ -24,7 +49,7 @@ class MatchedPair(namedtuple('MatchPair', ['match_obj', 'rule'])):
 
 
 class StartStopIndex(namedtuple('StartStopIndex', ['start', 'end', 'value'])):
-
+  """Represents the start and stop indices of a match for a given template value."""
   def __eq__(self, other):
     return self.start == other.start and self.end == other.end
 
@@ -33,6 +58,7 @@ class StartStopIndex(namedtuple('StartStopIndex', ['start', 'end', 'value'])):
 
 
 class VisualDebugger(object):
+  """Responsible for building the parse history of a TextFSM object into a visual html doc. """
 
   def __init__(self, fsm, cli_text):
     self.fsm = fsm
@@ -52,6 +78,7 @@ class VisualDebugger(object):
     html_file.write(prelude_lines)
 
   def build_state_colors(self):
+    """Basic colour wheel selection for state highlighting"""
     cntr = 1
     for state_name in self.fsm.states.keys():
       self.state_colormap[state_name] = (67 * cntr) % 360
@@ -59,6 +86,7 @@ class VisualDebugger(object):
 
   @staticmethod
   def hsl_css(h, s, l):
+    """Return the CSS string for HSL background color."""
     return "  background-color: hsl({},{}%,{}%);\n".format(h, s, l)
 
   def add_css_styling(self, html_file):
@@ -108,7 +136,7 @@ class VisualDebugger(object):
           LINE_SATURATION,
           LINE_LIGHTNESS
         ),
-        "  border-radius: {}px;\n".format(BORDER_RADIUS),
+        "  border-radius: 5 px;\n",
         "  padding: 0 10px;\n",
         "}\n"
       ]
@@ -132,10 +160,15 @@ class VisualDebugger(object):
             )
           )
 
+      # Merge indexes that overlap due to multiple rule matches for a single line.
       self.merge_indexes(match_index_pairs)
       match_index_pairs.sort()
+
+      # Overwrite named tuple data member
       line = line._replace(match_index_pairs=match_index_pairs)
       new_parse_history.append(line)
+
+      # Generate CSS for match highlighting and on-hover regex display
       if line.match_index_pairs:
         match_count = 0
         for index_pair in line.match_index_pairs:
@@ -146,7 +179,7 @@ class VisualDebugger(object):
               MATCH_SATURATION,
               MATCH_LIGHTNESS
             ),
-            "  border-radius: {}px;\n".format(BORDER_RADIUS),
+            "  border-radius: 5 px;\n",
             "  font-weight: bold;\n"
             "  color: white;\n",
             "  padding: 0 5px;\n",
@@ -158,6 +191,8 @@ class VisualDebugger(object):
           html_file.writelines(match_block)
           match_count += 1
       l_count += 1
+
+    # Overwrite parse history from FSM with newly processed history
     self.fsm.parse_history = new_parse_history
 
     css_closing_lines = [
@@ -167,6 +202,7 @@ class VisualDebugger(object):
     html_file.writelines(css_closing_lines)
 
   def merge_indexes(self, match_index_pairs):
+    """Merge overlapping index pairs that may occur due to multiple rule matches."""
 
     def overlapping(index_a, index_b):
       if index_a.end > index_b.start and index_a.start < index_b.end:
@@ -203,6 +239,11 @@ class VisualDebugger(object):
         match_index_pairs.append(pair)
 
   def add_cli_text(self, html_file):
+    """Builds the HTML elements of the debug page including:
+      - Colored States Header Bar
+      - Highlighted CLI Text
+    """
+
     cli_text_prelude = [
       "</head>\n",
       "<header class='states'>",
@@ -226,10 +267,11 @@ class VisualDebugger(object):
     lines = self.cli_text.splitlines()
     lines = [line + '\n' for line in lines]
 
+    # Process each line history and add highlighting where matches occur.
     l_count = 0
     for line_history in self.fsm.parse_history:
+      # Only process highlights where matches occur.
       if line_history.match_index_pairs:
-        # Merge indexes if there is any overlap
         built_line = ""
         prev_end = 0
         match_count = 0
@@ -237,11 +279,12 @@ class VisualDebugger(object):
           if index.start < 0 or index.end < 0:
             continue
 
-          # Strip out useless pattern format characters and value
+          # Strip out useless pattern format characters and value label.
+          # Escape chevrons in regex pattern.
           value_pattern = self.fsm.value_map[index.value]
           regex = re.sub('\?P<.*?>', '', value_pattern).replace('<', '&lt').replace('>', '&gt')
 
-          # Build section of match and escape HTML tag chevrons if present
+          # Build section of match and escape non HTML chevrons if present
           built_line += (
               lines[l_count][prev_end:index.start].replace('<', '&lt').replace('>', '&gt')
               + "<span class='{}-match-{}-{}'>".format(line_history.state, l_count, match_count)
@@ -254,7 +297,7 @@ class VisualDebugger(object):
         built_line += lines[l_count][line_history.match_index_pairs[-1].end:].replace('<', '&lt').replace('>', '&gt')
         lines[l_count] = built_line
       else:
-        # Escape HTML tag chevrons if present
+        # Escape non HTML tag chevrons if present
         lines[l_count] = lines[l_count].replace('<', '&lt').replace('>', '&gt')
 
       # Add final span wrapping tag for line state color
@@ -263,17 +306,18 @@ class VisualDebugger(object):
       l_count += 1
 
     # Close off document
-    end_body_end_html = [
-      "</pre>\n",
-      "</body>\n",
-      "</html>\n"
-    ]
+    end_body_end_html = dedent('''
+        </pre>
+      </body>
+    </html>
+    ''')
 
     html_file.writelines(lines)
 
-    html_file.writelines(end_body_end_html)
+    html_file.write(end_body_end_html)
 
   def build_debug_html(self):
+    """Calls HTML building procedures in sequence to create debug HTML doc."""
     with open("debug.html", "w+") as f:
       self.add_prelude_boilerplate(f)
       self.build_state_colors()

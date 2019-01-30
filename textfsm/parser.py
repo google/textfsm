@@ -573,7 +573,7 @@ class TextFSM(object):
     # Name of the current state.
     self._cur_state_name = None
     # Visual debug mode flag
-    self.visual_debug = True
+    self.visual_debug = False
     # Keep track of parse history when in debug mode.
     self.parse_history = []
 
@@ -1066,7 +1066,7 @@ def main(argv=None):
     argv = sys.argv
 
   try:
-    opts, args = getopt.getopt(argv[1:], 'h', ['help'])
+    opts, args = getopt.getopt(argv[1:], 'h', ['help', 'visual-debug'])
   except getopt.error as msg:
     raise Usage(msg)
 
@@ -1090,6 +1090,11 @@ def main(argv=None):
       # Prints parsed tabular result.
       with open(args[1], 'r') as f:
         cli_input = f.read()
+
+      for opt, _ in opts:
+        if opt == '--visual-debug':
+          print("visual debug mode, open 'debug.html' for template behaviour when parsing the CLI text.")
+          fsm.visual_debug = True
 
       table = fsm.ParseText(cli_input)
 
@@ -1117,7 +1122,7 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-  help_msg = '%s [--help] template [input_file [output_file]]\n' % sys.argv[0]
+  help_msg = '%s [--help] [--visual-debug] template [input_file [output_file]]\n' % sys.argv[0]
   try:
     sys.exit(main())
   except Usage as err:
