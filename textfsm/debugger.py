@@ -12,11 +12,15 @@ BORDER_RADIUS = 5
 
 
 class LineHistory(namedtuple('LineHistory', ['line', 'state', 'matches', 'match_index_pairs'])):
-  pass
+  """" The match history for a given line when parsed using the FSM.
+
+  Contains the regex match objects for that line,
+  which are converted to indices for highlighting
+  """
 
 
 class MatchedPair(namedtuple('MatchPair', ['match_obj', 'rule'])):
-  pass
+  """" Stores the line history when parsed using the FSM."""
 
 
 class StartStopIndex(namedtuple('StartStopIndex', ['start', 'end', 'value'])):
@@ -233,7 +237,7 @@ class VisualDebugger(object):
           if index.start < 0 or index.end < 0:
             continue
 
-          # Strip out useless pattern format characters
+          # Strip out useless pattern format characters and value
           value_pattern = self.fsm.value_map[index.value]
           regex = re.sub('\?P<.*?>', '', value_pattern).replace('<', '&lt').replace('>', '&gt')
 
