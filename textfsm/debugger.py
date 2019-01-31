@@ -275,21 +275,31 @@ class VisualDebugger(object):
         built_line = ""
         prev_end = 0
         match_count = 0
+
         for index in line_history.match_index_pairs:
           if index.start < 0 or index.end < 0:
             continue
 
           # Strip out useless pattern format characters and value label.
           # Escape chevrons in regex pattern.
-          value_pattern = self.fsm.value_map[index.value]
-          regex = re.sub('\?P<.*?>', '', value_pattern).replace('<', '&lt').replace('>', '&gt')
+          re_patterns = []
+          values = []
+          if type(index.value) is list:
+            values = index.value
+            for v in index.value:
+              value_pattern = self.fsm.value_map[v]
+              re_patterns.append(re.sub('\?P<.*?>', '', value_pattern).replace('<', '&lt').replace('>', '&gt'))
+          else:
+            values.append(index.value)
+            value_pattern = self.fsm.value_map[index.value]
+            re_patterns.append(re.sub('\?P<.*?>', '', value_pattern).replace('<', '&lt').replace('>', '&gt'))
 
           # Build section of match and escape non HTML chevrons if present
           built_line += (
               lines[l_count][prev_end:index.start].replace('<', '&lt').replace('>', '&gt')
               + "<span class='{}-match-{}-{}'>".format(line_history.state, l_count, match_count)
               + lines[l_count][index.start:index.end].replace('<', '&lt').replace('>', '&gt')
-              + "</span><span class='regex'>{} >> {}</span>".format(regex, index.value)
+              + "</span><span class='regex'>{} >> {}</span>".format(re_patterns, values)
           )
           prev_end = index.end
           match_count += 1
