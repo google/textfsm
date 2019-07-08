@@ -16,6 +16,7 @@
 
 """Work around a regression in Python 2.6 that makes RegexObjects uncopyable."""
 
+from builtins import object
 import re
 
 

@@ -19,6 +19,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from builtins import str
 import unittest
 from six import StringIO
 import textfsm
@@ -513,15 +514,15 @@ State1
     # Tests 'Filldown' and 'Required' options.
     data = 'two\none'
     result = t.ParseTextToDicts(data)
-    self.assertEqual(str(result), "[{'hoo': 'two', 'boo': 'one'}]")
+    self.assertDictEqual(result[0], {'hoo': 'two', 'boo': 'one'})
 
     t = textfsm.TextFSM(StringIO(tplt))
     # Matching two lines. Two records returned due to 'Filldown' flag.
     data = 'two\none\none'
     t.Reset()
     result = t.ParseTextToDicts(data)
-    self.assertEqual(
-        str(result), "[{'hoo': 'two', 'boo': 'one'}, {'hoo': 'two', 'boo': 'one'}]")
+    self.assertListEqual(
+        result, [{'hoo': 'two', 'boo': 'one'}, {'hoo': 'two', 'boo': 'one'}])
 
     # Multiple Variables and options.
     tplt = ('Value Required,Filldown boo (one)\n'
@@ -531,8 +532,8 @@ State1
     t = textfsm.TextFSM(StringIO(tplt))
     data = 'two\none\none'
     result = t.ParseTextToDicts(data)
-    self.assertEqual(
-        str(result), "[{'hoo': 'two', 'boo': 'one'}, {'hoo': 'two', 'boo': 'one'}]")
+    self.assertListEqual(
+        result, [{'hoo': 'two', 'boo': 'one'}, {'hoo': 'two', 'boo': 'one'}])
 
   def testParseNullText(self):
 

@@ -28,6 +28,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from builtins import str
+from builtins import zip
+from builtins import object
 import getopt
 import inspect
 import re
@@ -312,7 +315,7 @@ class TextFSMValue(object):
     self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
 
     # Compile and store the regex object only on List-type values for use in nested matching
-    if any(map(lambda x: isinstance(x, TextFSMOptions.List), self.options)):
+    if any([isinstance(x, TextFSMOptions.List) for x in self.options]):
         try:
             self.compiled_regex = re.compile(self.regex)
         except re.error as e:

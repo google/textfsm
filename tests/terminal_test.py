@@ -18,6 +18,8 @@
 """Unittest for terminal module."""
 
 
+from builtins import range
+from builtins import object
 import sys
 import unittest
 

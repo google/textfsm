@@ -26,6 +26,11 @@ formats such as CSV and variable sized and justified rows.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from builtins import next
+from builtins import str
+from builtins import zip
+from builtins import range
+from builtins import object
 import copy
 from functools import cmp_to_key
 import textwrap
@@ -342,9 +347,9 @@ class TextTable(object):
 
   def __iter__(self):
     """Iterator that excludes the header row."""
-    return self.next()
+    return next(self)
 
-  def next(self):
+  def __next__(self):
     # Maintain a counter so a row can know what index it is.
     # Save the old value to support nested interations.
     old_iter = self._iterator

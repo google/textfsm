@@ -25,6 +25,8 @@ Is the glue between an automated command scraping program (such as RANCID) and
 the TextFSM output parser.
 """
 
+from builtins import str
+from builtins import object
 import copy
 import os
 import re
