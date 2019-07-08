@@ -514,7 +514,7 @@ State1
     # Tests 'Filldown' and 'Required' options.
     data = 'two\none'
     result = t.ParseTextToDicts(data)
-    self.assertDictEqual(result[0], {'hoo': 'two', 'boo': 'one'})
+    self.assertListEqual(result, [{'hoo': 'two', 'boo': 'one'}])
 
     t = textfsm.TextFSM(StringIO(tplt))
     # Matching two lines. Two records returned due to 'Filldown' flag.
@@ -673,28 +673,34 @@ State1
 
   def testNestedMatching(self):
       """
-      Ensures that List-type values with nested regex capture groups are parsed correctly
-      as a list of dictionaries.
+      Ensures that List-type values with nested regex capture groups are parsed
+      correctly as a list of dictionaries.
 
-      Additionaly, another value is used with the same group-name as one of the nested groups to ensure that
-      there are no conflicts when the same name is used.
+      Additionaly, another value is used with the same group-name as one of the
+      nested groups to ensure that there are no conflicts when the same name is
+      used.
       """
       tplt = (
-          "Value List foo ((?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)\n"  # A nested group is called "name"
-          "Value name (\w+)\n\n"  # A regular value is called "name"
-          "Start\n  ^\s*${foo}\n  ^\s*${name}\n  ^\s*$$ -> Record"  # "${name}" here refers to the Value called "name"
+          # A nested group is called "name"
+          "Value List foo ((?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)\n"
+          # A regular value is called "name"
+          "Value name (\w+)\n\n"
+          # "${name}" here refers to the Value called "name"
+          "Start\n  ^\s*${foo}\n  ^\s*${name}\n  ^\s*$$ -> Record"
       )
       t = textfsm.TextFSM(StringIO(tplt))
-      data = " Bob: 32 NC\n Alice: 27 NY\n Jeff: 45 CA\nJulia\n\n"  # Julia should be parsed as "name" separately
+      # Julia should be parsed as "name" separately
+      data = " Bob: 32 NC\n Alice: 27 NY\n Jeff: 45 CA\nJulia\n\n"
       result = t.ParseText(data)
       self.assertEqual(
           result, (
               [[[
-                {'name': 'Bob', 'age': '32', 'state': 'NC'},
-                {'name': 'Alice', 'age': '27', 'state': 'NY'},
-                {'name': 'Jeff', 'age': '45', 'state': 'CA'}
+                  {'name': 'Bob', 'age': '32', 'state': 'NC'},
+                  {'name': 'Alice', 'age': '27', 'state': 'NY'},
+                  {'name': 'Jeff', 'age': '45', 'state': 'CA'}
               ], 'Julia']]
-      ))
+          )
+      )
 
   def testNestedNameConflict(self):
       tplt = (
