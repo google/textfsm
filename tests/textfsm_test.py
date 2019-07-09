@@ -682,11 +682,17 @@ State1
       """
       tplt = (
           # A nested group is called "name"
-          "Value List foo ((?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)\n"
+          r"Value List foo ((?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)"
+          "\n"
           # A regular value is called "name"
-          "Value name (\w+)\n\n"
+          r"Value name (\w+)"
           # "${name}" here refers to the Value called "name"
-          "Start\n  ^\s*${foo}\n  ^\s*${name}\n  ^\s*$$ -> Record"
+          "\n\nStart\n"
+          r"  ^\s*${foo}"
+          "\n"
+          r"  ^\s*${name}"
+          "\n"
+          r"  ^\s*$$ -> Record"
       )
       t = textfsm.TextFSM(StringIO(tplt))
       # Julia should be parsed as "name" separately
@@ -705,8 +711,11 @@ State1
   def testNestedNameConflict(self):
       tplt = (
           # Two nested groups are called "name"
-          "Value List foo ((?P<name>\w+)\s+(?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)\n"
-          "Start\n  ^\s*${foo}\n  ^\s*$$ -> Record"
+          r"Value List foo ((?P<name>\w+)\s+(?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)"
+          "\nStart\n"
+          r"^\s*${foo}"
+          "\n  ^"
+          r"\s*$$ -> Record"
       )
       self.assertRaises(textfsm.TextFSMTemplateError, textfsm.TextFSM, StringIO(tplt))
 

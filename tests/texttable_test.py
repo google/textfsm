@@ -37,6 +37,7 @@ class UnitTestRow(unittest.TestCase):
   """Tests texttable.Row() class."""
 
   def setUp(self):
+    super(UnitTestRow, self).setUp()
     self.row = texttable.Row()
     self.row._keys = ['a', 'b', 'c']
     self.row._values = ['1', '2', '3']

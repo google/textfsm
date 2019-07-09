@@ -88,6 +88,7 @@ class UnitTestCliTable(unittest.TestCase):
   """Tests the CliTable class."""
 
   def setUp(self):
+    super(UnitTestCliTable, self).setUp()
     clitable.CliTable.INDEX = {}
     self.clitable = clitable.CliTable('default_index', 'testdata')
     self.input_data = ('a b c\n'
