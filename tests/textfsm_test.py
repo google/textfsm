@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright 2010 Google Inc. All Rights Reserved.
 #
@@ -386,12 +387,12 @@ class UnitTestFSM(unittest.TestCase):
 Value Beer (.*)
 Value Wine (\w+)
 
-# An explanation.
+# An explanation with a unicode character Δ
 Start
   ^hi there ${Wine}. -> Next.Record State1
 
 State1
-  ^\w
+  ^Δ
   ^$Beer .. -> Start
   # Some comments
   ^$$ -> Next
@@ -401,14 +402,14 @@ End
 # Tail comment.
 """
 
-    buf_result = r"""Value Beer (.*)
+    buf_result = u"""Value Beer (.*)
 Value Wine (\w+)
 
 Start
   ^hi there ${Wine}. -> Next.Record State1
 
 State1
-  ^\w
+  ^Δ
   ^$Beer .. -> Start
   ^$$ -> Next
   ^$$ -> End
