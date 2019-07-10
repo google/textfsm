@@ -34,6 +34,7 @@ from builtins import object
 import getopt
 import inspect
 import re
+import six
 import string
 import sys
 
@@ -704,7 +705,8 @@ class TextFSM(object):
       # Blank line signifies end of Value definitions.
       if not line:
         return
-
+      if not isinstance(line, six.string_types):
+        line = line.decode('utf-8')
       # Skip commented lines.
       if self.comment_regex.match(line):
         continue
@@ -772,7 +774,8 @@ class TextFSM(object):
     for line in template:
       self._line_num += 1
       line = line.rstrip()
-
+      if not isinstance(line, six.string_types):
+        line = line.decode('utf-8')
       # First line is state definition
       if line and not self.comment_regex.match(line):
          # Ensure statename has valid syntax and is not a reserved word.
@@ -799,7 +802,8 @@ class TextFSM(object):
       # Finish rules processing on blank line.
       if not line:
         break
-
+      if not isinstance(line, six.string_types):
+        line = line.decode('utf-8')
       if self.comment_regex.match(line):
         continue
 
