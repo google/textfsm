@@ -97,6 +97,7 @@ class UnitTestFSM(unittest.TestCase):
     self.assertEqual(r.line_op, 'Next')
     self.assertEqual(r.new_state, '')
     self.assertEqual(r.record_op, '')
+
     # Line with record.
     line = '  ^A beer called ${beer} -> Continue.Record'
     r = textfsm.TextFSMRule(line)
@@ -104,6 +105,7 @@ class UnitTestFSM(unittest.TestCase):
     self.assertEqual(r.line_op, 'Continue')
     self.assertEqual(r.new_state, '')
     self.assertEqual(r.record_op, 'Record')
+
     # Line with new state.
     line = '  ^A beer called ${beer} -> Next.NoRecord End'
     r = textfsm.TextFSMRule(line)
@@ -119,6 +121,19 @@ class UnitTestFSM(unittest.TestCase):
                       '  ^A beer called ${beer} -> Boo.hoo')
     self.assertRaises(textfsm.TextFSMTemplateError, textfsm.TextFSMRule,
                       '  ^A beer called ${beer} -> Continue.Record $Hi')
+
+  def testRulePrefixes(self):
+    """Test valid and invalid rule prefixes."""
+
+    # Bad syntax tests.
+    for prefix in (' ', '.^', ' \t', ''):
+      f = StringIO('Value unused (.)\n\nStart\n' + prefix + 'A simple string.')
+      self.assertRaises(textfsm.TextFSMTemplateError, textfsm.TextFSM, f)
+
+    # Good syntax tests.
+    for prefix in (' ^', '  ^', '\t^'):
+      f = StringIO('Value unused (.)\n\nStart\n' + prefix + 'A simple string.')
+      self.assertIsNotNone(textfsm.TextFSM(f))
 
   def testImplicitDefaultRules(self):
 

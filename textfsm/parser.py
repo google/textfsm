@@ -28,8 +28,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-__version__ = '0.4.1'
-
 import getopt
 import inspect
 import regex
@@ -823,8 +821,8 @@ class TextFSM(object):
       if self.comment_regex.match(line):
         continue
 
-      # A rule within a state, starts with whitespace
-      if not (line.startswith('  ^') or line.startswith('\t^')):
+      # A rule within a state, starts with 1 or 2 spaces, or a tab.
+      if not line.startswith((' ^', '  ^', '\t^')):
         raise TextFSMTemplateError(
             "Missing white space or carat ('^') before rule. Line: %s" %
             self._line_num)

@@ -31,7 +31,7 @@ from functools import cmp_to_key
 import textwrap
 # pylint: disable=redefined-builtin
 from six.moves import range
-import terminal
+from textfsm import terminal
 
 
 class Error(Exception):

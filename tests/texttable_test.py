@@ -23,8 +23,8 @@ import unittest
 # pylint: disable=redefined-builtin
 from six.moves import range
 from six.moves import StringIO
-import terminal
-import texttable
+from textfsm import terminal
+from textfsm import texttable
 
 
 def cmp(a, b):
