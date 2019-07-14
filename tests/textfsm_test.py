@@ -22,6 +22,7 @@ from __future__ import print_function
 
 from builtins import str
 import unittest
+import six
 from six import StringIO
 import textfsm
 
@@ -382,17 +383,17 @@ class UnitTestFSM(unittest.TestCase):
     self.assertEqual(str(t), buf_result)
 
     # Complex template, multiple vars and states with comments (no var options).
-    buf = r"""# Header
+    buf = """# Header
 # Header 2
 Value Beer (.*)
-Value Wine (\w+)
+Value Wine (\\w+)
 
 # An explanation with a unicode character Δ
 Start
   ^hi there ${Wine}. -> Next.Record State1
 
 State1
-  ^Δ
+  ^\\wΔ
   ^$Beer .. -> Start
   # Some comments
   ^$$ -> Next
@@ -403,20 +404,23 @@ End
 """
 
     buf_result = u"""Value Beer (.*)
-Value Wine (\w+)
+Value Wine (\\w+)
 
 Start
   ^hi there ${Wine}. -> Next.Record State1
 
 State1
-  ^Δ
+  ^\\wΔ
   ^$Beer .. -> Start
   ^$$ -> Next
   ^$$ -> End
 """
     f = StringIO(buf)
     t = textfsm.TextFSM(f)
-    self.assertEqual(str(t), buf_result)
+    if (six.PY2):
+      self.assertEqual(unicode(t), buf_result)
+    else:
+      self.assertEqual(str(t), buf_result)
 
   def testParseText(self):
 
