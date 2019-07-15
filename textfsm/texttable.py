@@ -26,9 +26,15 @@ formats such as CSV and variable sized and justified rows.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from builtins import next
+from builtins import str
+from builtins import zip
+from builtins import range
+from builtins import object
 import copy
 from functools import cmp_to_key
 import textwrap
+import six
 # pylint: disable=redefined-builtin
 from six.moves import range
 from textfsm import terminal
@@ -342,9 +348,9 @@ class TextTable(object):
 
   def __iter__(self):
     """Iterator that excludes the header row."""
-    return self.next()
+    return next(self)
 
-  def next(self):
+  def __next__(self):
     # Maintain a counter so a row can know what index it is.
     # Save the old value to support nested interations.
     old_iter = self._iterator
@@ -1027,6 +1033,8 @@ class TextTable(object):
       line = buf.readline()
       header_str = ''
       while not header_str:
+        if not isinstance(line, six.string_types):
+          line = line.decode('utf-8')
         # Remove comments.
         header_str = line.split('#')[0].strip()
         if not header_str:
@@ -1046,6 +1054,8 @@ class TextTable(object):
 
     # xreadlines would be better but not supported by StringIO for testing.
     for line in buf:
+      if not isinstance(line, six.string_types):
+        line = line.decode('utf-8')
       # Support commented lines, provide '#' is first character of line.
       if line.startswith('#'):
         continue

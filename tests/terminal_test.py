@@ -18,6 +18,8 @@
 """Unittest for terminal module."""
 
 
+from builtins import range
+from builtins import object
 import sys
 import unittest
 
@@ -29,6 +31,7 @@ from textfsm import terminal
 class TerminalTest(unittest.TestCase):
 
   def setUp(self):
+    super(TerminalTest, self).setUp()
     self.environ_orig = terminal.os.environ
     self.open_orig = terminal.os.open
     self.terminal_orig = terminal.TerminalSize
@@ -142,6 +145,7 @@ class FakeTerminal(object):
 class PagerTest(unittest.TestCase):
 
   def setUp(self):
+    super(PagerTest, self).setUp()
     sys.stdout = FakeTerminal()
     self.get_ch_orig = terminal.Pager._GetCh
     terminal.Pager._GetCh = lambda self: 'q'

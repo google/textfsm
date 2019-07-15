@@ -19,6 +19,8 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from past.builtins import cmp
+from builtins import range
 import unittest
 # pylint: disable=redefined-builtin
 from six.moves import range
@@ -35,6 +37,7 @@ class UnitTestRow(unittest.TestCase):
   """Tests texttable.Row() class."""
 
   def setUp(self):
+    super(UnitTestRow, self).setUp()
     self.row = texttable.Row()
     self.row._keys = ['a', 'b', 'c']
     self.row._values = ['1', '2', '3']

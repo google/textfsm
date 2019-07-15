@@ -28,9 +28,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from builtins import str
+from builtins import zip
+from builtins import object
 import getopt
 import inspect
 import re
+import six
 import string
 import sys
 
@@ -312,7 +316,7 @@ class TextFSMValue(object):
     self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
 
     # Compile and store the regex object only on List-type values for use in nested matching
-    if any(map(lambda x: isinstance(x, TextFSMOptions.List), self.options)):
+    if any([isinstance(x, TextFSMOptions.List) for x in self.options]):
         try:
             self.compiled_regex = re.compile(self.regex)
         except re.error as e:
@@ -701,7 +705,8 @@ class TextFSM(object):
       # Blank line signifies end of Value definitions.
       if not line:
         return
-
+      if not isinstance(line, six.string_types):
+        line = line.decode('utf-8')
       # Skip commented lines.
       if self.comment_regex.match(line):
         continue
@@ -769,7 +774,8 @@ class TextFSM(object):
     for line in template:
       self._line_num += 1
       line = line.rstrip()
-
+      if not isinstance(line, six.string_types):
+        line = line.decode('utf-8')
       # First line is state definition
       if line and not self.comment_regex.match(line):
          # Ensure statename has valid syntax and is not a reserved word.
@@ -796,7 +802,8 @@ class TextFSM(object):
       # Finish rules processing on blank line.
       if not line:
         break
-
+      if not isinstance(line, six.string_types):
+        line = line.decode('utf-8')
       if self.comment_regex.match(line):
         continue
 

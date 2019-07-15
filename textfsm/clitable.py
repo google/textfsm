@@ -24,7 +24,12 @@ output combinations and store the data in a TextTable.
 Is the glue between an automated command scraping program (such as RANCID) and
 the TextFSM output parser.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
+from builtins import str
+from builtins import object
 import copy
 import os
 import re
