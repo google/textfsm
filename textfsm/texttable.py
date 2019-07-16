@@ -163,7 +163,7 @@ class Row(dict):
     except IndexError:
       return default_value
 
-  def index(self, column):  # pylint: disable=C6409
+  def index(self, column):
     """Fetches the column number (0 indexed).
 
     Args:
@@ -431,7 +431,6 @@ class TextTable(object):
         new_table.Append(filtered_row)
     return new_table
 
-  # pylint: disable=C6409
   # pylint: disable=W0622
   def sort(self, cmp=None, key=None, reverse=False):
     """Sorts rows in the texttable.
@@ -515,7 +514,6 @@ class TextTable(object):
             row1[column] = row2[column]
           break
 
-  # pylint: enable=C6409
   def Remove(self, row):
     """Removes a row from the table.
 
@@ -1083,7 +1081,7 @@ class TextTable(object):
 
     return self.size
 
-  def index(self, name=None):  # pylint: disable=C6409
+  def index(self, name=None):
     """Returns index number of supplied column name.
 
     Args:

@@ -364,7 +364,6 @@ class TextFSMValue(object):
 
 class CopyableRegexObject(object):
   """Like a re.RegexObject, but can be copied."""
-  # pylint: disable=C6409
 
   def __init__(self, pattern):
     self.pattern = pattern
