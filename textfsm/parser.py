@@ -27,6 +27,7 @@ for each input entity.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
 
 from builtins import str
 from builtins import zip
@@ -538,7 +539,7 @@ class TextFSMRule(object):
       return '  %s' % self.match
 
     # Non defaults.
-    return '  %s -> %s%s' % (self.match, operation, new_state)
+    return u'  %s -> %s%s' % (self.match, operation, new_state)
 
 
 class TextFSM(object):
@@ -584,7 +585,7 @@ class TextFSM(object):
     self.Reset()
 
   def __str__(self):
-    """Returns the FSM template, mimic the input file."""
+    """Returns the FSM template, mimicing the input file."""
 
     result = '\n'.join([str(value) for value in self.values])
     result += '\n'
