@@ -30,9 +30,16 @@ from __future__ import print_function
 
 import getopt
 import inspect
-import regex
 import string
 import sys
+import warnings
+try:
+  import regex as regexModule
+  useRegex = True
+except ImportError:
+  import re as regexModule
+  warnings.warn("Could not locate regex module. Defaulting to re. Repeated keyword disabled.", ImportWarning)
+  useRegex = False
 
 
 class Error(Exception):
@@ -118,6 +125,8 @@ class TextFSMOptions(object):
       obj = getattr(cls, obj_name)
       if inspect.isclass(obj) and issubclass(obj, cls.OptionBase):
         valid_options.append(obj_name)
+    if useRegex is not True:
+      valid_options.remove("Repeated")
     return valid_options
 
   @classmethod
@@ -130,6 +139,8 @@ class TextFSMOptions(object):
      values instead of just the last value as re would."""
 
     def OnAssignVar(self):
+      if useRegex is not True:
+        raise ModuleNotFoundError("Cannot use Repeated option without installing the regex module.")
       self.value.value = self.value.values_list
 
     def OnCreateOptions(self):
@@ -208,8 +219,8 @@ class TextFSMOptions(object):
           match = None
       # If the List-value regex has match-groups defined, add the resulting dict to the list
       # Otherwise, add the string that was matched
-      if match and match.capturesdict():
-          self._value.append({x: match.capturesdict()[x][-1] for x in match.capturesdict()})
+      if match and match.groupdict():
+        self._value.append(match.groupdict())
       else:
           self._value.append(self.value.value)
 
@@ -263,7 +274,7 @@ class TextFSMValue(object):
     try:
       self.value = value[-1]
     except IndexError:
-      self.value = ''
+      self.value = ""
     self.values_list = value
     # Call OnAssignVar on options.
     _ = [option.OnAssignVar() for option in self.options]
@@ -325,18 +336,18 @@ class TextFSMValue(object):
       raise TextFSMTemplateError(
           "Invalid Value name '%s' or name too long." % self.name)
 
-    if (not regex.match(r'^\(.*\)$', self.regex) or
+    if (not regexModule.match(r'^\(.*\)$', self.regex) or
         self.regex.count('(') != self.regex.count(')')):
       raise TextFSMTemplateError(
           "Value '%s' must be contained within a '()' pair." % self.regex)
 
-    self.template = regex.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
+    self.template = regexModule.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
 
     # Compile and store the regex object only on List-type values for use in nested matching
     if any(map(lambda x: isinstance(x, TextFSMOptions.List), self.options)):
         try:
-            self.compiled_regex = regex.compile(self.regex)
-        except regex.error as e:
+            self.compiled_regex = regexModule.compile(self.regex)
+        except regexModule.error as e:
             raise TextFSMTemplateError(str(e))
 
   def _AddOption(self, name):
@@ -379,12 +390,12 @@ class TextFSMValue(object):
 
 
 class CopyableRegexObject(object):
-  """Like a regex.RegexObject, but can be copied."""
+  """Like a re.RegexObject, but can be copied."""
   # pylint: disable=C6409
 
   def __init__(self, pattern):
     self.pattern = pattern
-    self.regex = regex.compile(pattern)
+    self.regex = regexModule.compile(pattern)
 
   def match(self, *args, **kwargs):
     return self.regex.match(*args, **kwargs)
@@ -421,7 +432,7 @@ class TextFSMRule(object):
     line_num: Integer row number of Value.
   """
   # Implicit default is '(regexp) -> Next.NoRecord'
-  MATCH_ACTION = regex.compile(r'(?P<match>.*)(\s->(?P<action>.*))')
+  MATCH_ACTION = regexModule.compile(r'(?P<match>.*)(\s->(?P<action>.*))')
 
   # The structure to the right of the '->'.
   LINE_OP = ('Continue', 'Next', 'Error')
@@ -437,11 +448,11 @@ class TextFSMRule(object):
   NEWSTATE_RE = r'(?P<new_state>\w+|\".*\")'
 
   # Compound operator (line and record) with optional new state.
-  ACTION_RE = regex.compile(r'\s+%s(\s+%s)?$' % (OPERATOR_RE, NEWSTATE_RE))
+  ACTION_RE = regexModule.compile(r'\s+%s(\s+%s)?$' % (OPERATOR_RE, NEWSTATE_RE))
   # Record operator with optional new state.
-  ACTION2_RE = regex.compile(r'\s+%s(\s+%s)?$' % (RECORD_OP_RE, NEWSTATE_RE))
+  ACTION2_RE = regexModule.compile(r'\s+%s(\s+%s)?$' % (RECORD_OP_RE, NEWSTATE_RE))
   # Default operators with optional new state.
-  ACTION3_RE = regex.compile(r'(\s+%s)?$' % (NEWSTATE_RE))
+  ACTION3_RE = regexModule.compile(r'(\s+%s)?$' % (NEWSTATE_RE))
 
   def __init__(self, line, line_num=-1, var_map=None):
     """Initialise a new rule object.
@@ -487,7 +498,7 @@ class TextFSMRule(object):
     try:
       # Work around a regression in Python 2.6 that makes RE Objects uncopyable.
       self.regex_obj = CopyableRegexObject(self.regex)
-    except regex.error:
+    except regexModule.error:
       raise TextFSMTemplateError(
           "Invalid regular expression: '%s'. Line: %s." %
           (self.regex, self.line_num))
@@ -531,7 +542,7 @@ class TextFSMRule(object):
 
     # Check that an error message is present only with the 'Error' operator.
     if self.line_op != 'Error' and self.new_state:
-      if not regex.match(r'\w+', self.new_state):
+      if not regexModule.match(r'\w+', self.new_state):
         raise TextFSMTemplateError(
             'Alphanumeric characters only in state names. Line: %s.'
             % (self.line_num))
@@ -570,8 +581,8 @@ class TextFSM(object):
   """
   # Variable and State name length.
   MAX_NAME_LEN = 48
-  comment_regex = regex.compile(r'^\s*#')
-  state_name_re = regex.compile(r'^(\w+)$')
+  comment_regex = regexModule.compile(r'^\s*#')
+  state_name_re = regexModule.compile(r'^(\w+)$')
   _DEFAULT_OPTIONS = TextFSMOptions
 
   def __init__(self, template, options_class=_DEFAULT_OPTIONS):
@@ -947,8 +958,13 @@ class TextFSM(object):
     for rule in self._cur_state:
       matched = self._CheckRule(rule, line)
       if matched:
-        for value in matched.capturesdict():
-          self._AssignVar(matched, value)
+        if useRegex is True:
+          for value in matched.capturesdict():
+            self._AssignVar(matched, value)
+        else:
+          # workaround to fallback on re module if regex not imported
+          for value in matched.groupdict():
+            self._AssignVar(matched, value)
 
         if self._Operations(rule, line):
           # Not a Continue so check for state transition.
@@ -984,7 +1000,10 @@ class TextFSM(object):
     """
     _value = self._GetValue(value)
     if _value is not None:
+      if useRegex:
         _value.AssignVar(matched.captures(value))
+      else:
+        _value.AssignVar([matched.group(value)])
 
   def _Operations(self, rule, line):
     """Operators on the data record.
