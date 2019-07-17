@@ -26,9 +26,9 @@ import os
 import re
 import unittest
 
+from io import StringIO
 from textfsm import clitable
 from textfsm import copyable_regex_object
-from six.moves import StringIO
 
 
 class UnitTestIndexTable(unittest.TestCase):

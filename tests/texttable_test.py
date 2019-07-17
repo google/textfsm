@@ -21,12 +21,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from past.builtins import cmp
 from builtins import range
 import unittest
-# pylint: disable=redefined-builtin
-from six.moves import range
-from six.moves import StringIO
+from io import StringIO
 from textfsm import terminal
 from textfsm import texttable
 

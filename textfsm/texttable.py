@@ -34,11 +34,9 @@ from builtins import zip
 from builtins import range
 from builtins import object
 import copy
-from functools import cmp_to_key
-import textwrap
 import six
-# pylint: disable=redefined-builtin
-from six.moves import range
+import textwrap
+from functools import cmp_to_key
 from textfsm import terminal
 
 

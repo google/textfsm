@@ -22,11 +22,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
 from builtins import str
 from builtins import object
 __version__ = '0.1.1'
-
 
 import fcntl
 import getopt
@@ -37,6 +35,7 @@ import sys
 import termios
 import time
 import tty
+from io import open
 
 
 # ANSI, ISO/IEC 6429 escape sequences, SGR (Select Graphic Rendition) subset.
@@ -173,7 +172,7 @@ def EncloseAnsiText(text):
 def TerminalSize():
   """Returns terminal length and width as a tuple."""
   try:
-    with open(os.ctermid(), 'r') as tty_instance:
+    with open(os.ctermid()) as tty_instance:
       length_width = struct.unpack(
           'hh', fcntl.ioctl(tty_instance.fileno(), termios.TIOCGWINSZ, '1234'))
   except (IOError, OSError):
@@ -480,7 +479,7 @@ def main(argv=None):
   # Page text supplied in either specified file or stdin.
 
   if len(args) == 1:
-    with open(args[0]) as f:
+    with open(args[0], 'r', encoding="utf-8") as f:
       fd = f.read()
   else:
     fd = sys.stdin.read()

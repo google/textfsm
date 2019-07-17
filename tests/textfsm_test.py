@@ -23,8 +23,10 @@ from __future__ import unicode_literals
 
 from builtins import str
 import unittest
-import six
-from six import StringIO
+from io import StringIO
+
+
+
 import textfsm
 
 
@@ -397,46 +399,6 @@ class UnitTestFSM(unittest.TestCase):
     f = StringIO(buf)
     t = textfsm.TextFSM(f)
     self.assertEqual(str(t), buf_result)
-
-    # Complex template, multiple vars and states with comments (no var options).
-    buf = """# Header
-# Header 2
-Value Beer (.*)
-Value Wine (\\w+)
-
-# An explanation with a unicode character Δ
-Start
-  ^hi there ${Wine}. -> Next.Record State1
-
-State1
-  ^\\wΔ
-  ^$Beer .. -> Start
-  # Some comments
-  ^$$ -> Next
-  ^$$ -> End
-
-End
-# Tail comment.
-"""
-
-    buf_result = u"""Value Beer (.*)
-Value Wine (\\w+)
-
-Start
-  ^hi there ${Wine}. -> Next.Record State1
-
-State1
-  ^\\wΔ
-  ^$Beer .. -> Start
-  ^$$ -> Next
-  ^$$ -> End
-"""
-    f = StringIO(buf)
-    t = textfsm.TextFSM(f)
-    if (six.PY2):
-      self.assertEqual(unicode(t), buf_result)
-    else:
-      self.assertEqual(str(t), buf_result)
 
   def testParseText(self):
 
@@ -875,6 +837,67 @@ Start
     result = t.ParseText(data)
     self.assertListEqual(
         result, [['1', 'A2', 'B1'], ['2', 'A2', 'B3'], ['3', '', 'B3']])
+
+
+class UnitTestUnicode(unittest.TestCase):
+  """Tests the FSM engine."""
+
+  def testFSMValue(self):
+    # Check basic line is parsed.
+    line = 'Value beer (\\S+Δ)'
+    v = textfsm.TextFSMValue()
+    v.Parse(line)
+    self.assertEqual(v.name, 'beer')
+    self.assertEqual(v.regex, '(\\S+Δ)')
+    self.assertEqual(v.template, '(?P<beer>\\S+Δ)')
+    self.assertFalse(v.options)
+
+  def testFSMRule(self):
+    # Basic line, no action
+    line = '  ^A beer called ${beer}Δ'
+    r = textfsm.TextFSMRule(line)
+    self.assertEqual(r.match, '^A beer called ${beer}Δ')
+    self.assertEqual(r.line_op, '')
+    self.assertEqual(r.new_state, '')
+    self.assertEqual(r.record_op, '')
+
+  def testTemplateValue(self):
+    # Complex template, multiple vars and states with comments (no var options).
+    buf = """# Header
+# Header 2
+Value Beer (.*)
+Value Wine (\\w+)
+
+# An explanation with a unicode character Δ
+Start
+  ^hi there ${Wine}. -> Next.Record State1
+
+State1
+  ^\\wΔ
+  ^$Beer .. -> Start
+  # Some comments
+  ^$$ -> Next
+  ^$$ -> End
+
+End
+# Tail comment.
+"""
+
+    buf_result = """Value Beer (.*)
+Value Wine (\\w+)
+
+Start
+  ^hi there ${Wine}. -> Next.Record State1
+
+State1
+  ^\\wΔ
+  ^$Beer .. -> Start
+  ^$$ -> Next
+  ^$$ -> End
+"""
+    f = StringIO(buf)
+    t = textfsm.TextFSM(f)
+    self.assertEqual(str(t), buf_result)
 
 
 if __name__ == '__main__':

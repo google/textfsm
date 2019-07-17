@@ -38,6 +38,7 @@ import re
 import six
 import string
 import sys
+from io import open
 
 
 class Error(Exception):
@@ -174,7 +175,7 @@ class TextFSMOptions(object):
     """Value constitutes part of the Key of the record."""
 
   class List(OptionBase):
-    """
+    r"""
     Value takes the form of a list.
 
     If the value regex contains nested match groups in the form (?P<name>regex),
@@ -1070,14 +1071,14 @@ def main(argv=None):
 
   # If we have an argument, parse content of file and display as a template.
   # Template displayed will match input template, minus any comment lines.
-  with open(args[0], 'r') as template:
+  with open(args[0], 'r', encoding="utf-8") as template:
     fsm = TextFSM(template)
     print('FSM Template:\n%s\n' % fsm)
 
     if len(args) > 1:
       # Second argument is file with example cli input.
       # Prints parsed tabular result.
-      with open(args[1], 'r') as f:
+      with open(args[1], 'r', encoding="utf-8") as f:
         cli_input = f.read()
 
       table = fsm.ParseText(cli_input)
@@ -1090,7 +1091,7 @@ def main(argv=None):
   if len(args) > 2:
     # Compare tabular result with data in third file argument.
     # Exit value indicates if processed data matched expected result.
-    with open(args[2], 'r') as f:
+    with open(args[2], 'r', encoding="utf-8") as f:
       ref_table = f.read()
 
     if ref_table != result:

@@ -27,8 +27,6 @@ from builtins import object
 import sys
 import unittest
 
-# pylint: disable=redefined-builtin
-from six.moves import range
 from textfsm import terminal
 
 
