@@ -539,7 +539,7 @@ class TextFSMRule(object):
       return '  %s' % self.match
 
     # Non defaults.
-    return u'  %s -> %s%s' % (self.match, operation, new_state)
+    return '  %s -> %s%s' % (self.match, operation, new_state)
 
 
 class TextFSM(object):
