@@ -29,15 +29,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from builtins import str
-from builtins import zip
-from builtins import object
+
 import getopt
 import inspect
 import re
-import six
 import string
 import sys
+from builtins import object   # pylint: disable=redefined-builtin
+from builtins import str      # pylint: disable=redefined-builtin
+from builtins import zip      # pylint: disable=redefined-builtin
+import six
 
 
 class Error(Exception):
@@ -87,6 +88,7 @@ class TextFSMOptions(object):
     """Factory methods for option class.
 
     Attributes:
+      name: The name of the option.
       value: A TextFSMValue, the parent Value.
     """
 
@@ -181,7 +183,8 @@ class TextFSMOptions(object):
     instead of adding a string to the list, we add a dictionary of the groups.
 
     Eg.
-    Value List ((?P<name>\w+)\s+(?P<age>\d+)) would create results like [{'name': 'Bob', 'age': 32}]
+    Value List ((?P<name>\w+)\s+(?P<age>\d+)) would create results like:
+        [{'name': 'Bob', 'age': 32}]
 
     Do not give nested groups the same name as other values in the template.
     """
@@ -192,15 +195,15 @@ class TextFSMOptions(object):
     def OnAssignVar(self):
       # Nested matches will have more than one match group
       if self.value.compiled_regex.groups > 1:
-          match = self.value.compiled_regex.match(self.value.value)
+        match = self.value.compiled_regex.match(self.value.value)
       else:
-          match = None
-      # If the List-value regex has match-groups defined, add the resulting dict to the list
-      # Otherwise, add the string that was matched
+        match = None
+      # If the List-value regex has match-groups defined, add the resulting
+      # dict to the list. Otherwise, add the string that was matched
       if match and match.groupdict():
-          self._value.append(match.groupdict())
+        self._value.append(match.groupdict())
       else:
-          self._value.append(self.value.value)
+        self._value.append(self.value.value)
 
     def OnClearVar(self):
       if 'Filldown' not in self.value.OptionNames():
@@ -226,6 +229,7 @@ class TextFSMValue(object):
   '(.*) is the regular expression to match in the input data.
 
   Attributes:
+    compiled_regex: (regexp), Compiled regex for nested matching of List values.
     max_name_len: (int), maximum character length os a variable name.
     name: (str), Name of the value.
     options: (list), A list of current Value Options.
@@ -316,12 +320,13 @@ class TextFSMValue(object):
 
     self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
 
-    # Compile and store the regex object only on List-type values for use in nested matching
+    # Compile and store the regex object only on List-type values for use in
+    # nested matching
     if any([isinstance(x, TextFSMOptions.List) for x in self.options]):
-        try:
-            self.compiled_regex = re.compile(self.regex)
-        except re.error as e:
-            raise TextFSMTemplateError(str(e))
+      try:
+        self.compiled_regex = re.compile(self.regex)
+      except re.error as e:
+        raise TextFSMTemplateError(str(e))
 
   def _AddOption(self, name):
     """Add an option to this Value.
@@ -970,7 +975,7 @@ class TextFSM(object):
     """
     _value = self._GetValue(value)
     if _value is not None:
-        _value.AssignVar(matched.group(value))
+      _value.AssignVar(matched.group(value))
 
   def _Operations(self, rule, line):
     """Operators on the data record.

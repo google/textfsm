@@ -28,15 +28,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from builtins import next
-from builtins import str
-from builtins import zip
-from builtins import range
-from builtins import object
 import copy
-import six
-import textwrap
 from functools import cmp_to_key
+import textwrap
+
+from builtins import next      # pylint: disable=redefined-builtin
+from builtins import object    # pylint: disable=redefined-builtin
+from builtins import range     # pylint: disable=redefined-builtin
+from builtins import str       # pylint: disable=redefined-builtin
+from builtins import zip       # pylint: disable=redefined-builtin
+import six
+
 from textfsm import terminal
 
 
@@ -383,7 +385,6 @@ class TextTable(object):
 
   def Filter(self, function=None):
     """Construct Textable from the rows of which the function returns true.
-
 
     Args:
       function: A function applied to each row which returns a bool. If

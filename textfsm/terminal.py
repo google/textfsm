@@ -22,10 +22,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from builtins import str
-from builtins import object
-__version__ = '0.1.1'
-
 import fcntl
 import getopt
 import os
@@ -35,7 +31,10 @@ import sys
 import termios
 import time
 import tty
+from builtins import object   # pylint: disable=redefined-builtin
+from builtins import str      # pylint: disable=redefined-builtin
 
+__version__ = '0.1.1'
 
 # ANSI, ISO/IEC 6429 escape sequences, SGR (Select Graphic Rendition) subset.
 SGR = {

@@ -16,8 +16,9 @@
 
 """Work around a regression in Python 2.6 that makes RegexObjects uncopyable."""
 
-from builtins import object
+
 import re
+from builtins import object    # pylint: disable=redefined-builtin
 
 
 class CopyableRegexObject(object):
