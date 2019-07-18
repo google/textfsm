@@ -28,7 +28,7 @@ __version__ = '0.1.1'
 import fcntl
 import getopt
 import os
-import regex
+import re
 import struct
 import sys
 import termios
@@ -100,7 +100,7 @@ ANSI_START = '\001'
 ANSI_END = '\002'
 
 
-sgr_re = regex.compile(r'(%s?\033\[\d+(?:;\d+)*m%s?)' % (
+sgr_re = re.compile(r'(%s?\033\[\d+(?:;\d+)*m%s?)' % (
     ANSI_START, ANSI_END))
 
 
