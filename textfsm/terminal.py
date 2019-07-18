@@ -35,7 +35,6 @@ import sys
 import termios
 import time
 import tty
-from io import open
 
 
 # ANSI, ISO/IEC 6429 escape sequences, SGR (Select Graphic Rendition) subset.
@@ -479,7 +478,7 @@ def main(argv=None):
   # Page text supplied in either specified file or stdin.
 
   if len(args) == 1:
-    with open(args[0], 'r', encoding="utf-8") as f:
+    with open(args[0], 'r') as f:
       fd = f.read()
   else:
     fd = sys.stdin.read()

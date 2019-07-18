@@ -37,7 +37,6 @@ import os
 import re
 import threading
 import textfsm
-from io import open
 
 from textfsm import copyable_regex_object
 from textfsm import texttable
@@ -79,7 +78,7 @@ class IndexTable(object):
     self.compiled = None
     if file_path:
       self._index_file = file_path
-      self._index_handle = open(self._index_file, 'r', encoding="utf-8")
+      self._index_handle = open(self._index_file, 'r')
       self._ParseIndex(preread, precompile)
 
   def __del__(self):
@@ -109,7 +108,7 @@ class IndexTable(object):
     if hasattr(self, '_index_file'):
       # pylint: disable=protected-access
       clone._index_file = copy.deepcopy(self._index_file)
-      clone._index_handle = open(clone._index_file, 'r', encoding="utf-8")
+      clone._index_handle = open(clone._index_file, 'r')
 
     clone.index = copy.deepcopy(self.index)
     clone.compiled = copy.deepcopy(self.compiled)
@@ -241,7 +240,7 @@ class CliTable(texttable.TextTable):
     try:
       for tmplt in template_list:
         template_files.append(
-            open(os.path.join(self.template_dir, tmplt), 'r', encoding="utf-8"))
+            open(os.path.join(self.template_dir, tmplt), 'r'))
     except:
       for tmplt in template_files:
         tmplt.close()
