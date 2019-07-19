@@ -1,3 +1,5 @@
 include README.md
 include COPYING
+recursive-include tests *.py
 recursive-include examples *
+recursive-include testdata *
