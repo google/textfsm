@@ -33,6 +33,7 @@ import inspect
 import string
 import sys
 import warnings
+warnings.simplefilter("always")
 try:
   import regex as regexModule
   useRegex = True
@@ -222,6 +223,9 @@ class TextFSMOptions(object):
       if match and match.groupdict():
         self._value.append(match.groupdict())
       else:
+        if "Repeated" in (optionClass.name for optionClass in self.value.options):
+          self._value.append(self.value.values_list)
+        else:
           self._value.append(self.value.value)
 
     def OnClearVar(self):

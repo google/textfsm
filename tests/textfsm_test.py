@@ -900,16 +900,14 @@ normal1 normal2 """
         str(result))
     else:
       # test proper failure when falling back on re module
-      try:
-        result = t.ParseText(data)  # TODO: ensure this is not optimized out if tests are bytecode files
-        raise AssertionError("Expected a ModuleNotFoundError when using keyword 'Repeated' without 'regex' module")
-      except ModuleNotFoundError as e:
-        self.assertEqual(e.args[0], "Cannot use Repeated option without installing the regex module.")
+      with self.assertRaises(ModuleNotFoundError,
+                             msg="Expected a ModuleNotFoundError when using keyword 'Repeated' without 'regex' module"):
+        result = t.ParseText(data)
 
-  def testTemp(self):
-    tplt = """Value Repeated repeatedKey (\S+)
-Value Repeated repeatedValue (\S+)
-Value Repeated repeatedUnused (\S+)
+  def testRepeatedList(self):
+    tplt = """Value List,Repeated repeatedKey (\S+)
+Value Repeated,List repeatedValue (\S+)
+Value Repeated,List repeatedUnused (\S+)
 
 Start
   ^(${repeatedKey}:${repeatedValue} )+
@@ -921,16 +919,16 @@ key4:value4 key5:value5 key6:value6 \n
 record"""
 
     t = textfsm.TextFSM(StringIO(tplt))
-    try:
+    if useRegex is True:
       result = t.ParseText(data)
-    except ModuleNotFoundError as e:
-      if useRegex is True:
-        raise e
-      else:
-        return
+    else:
+      return
 
-    for i in range(len(result)):
-      print(result[i])
+    self.assertEqual("[[[['key1', 'key2', 'key3'], ['key4', 'key5', 'key6']], [['value1', 'value2', 'value3']," +
+                     " ['value4', 'value5', 'value6']], []]]",
+                     str(result)
+                     )
+
 
 if __name__ == '__main__':
   unittest.main()
