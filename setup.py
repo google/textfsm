@@ -45,7 +45,7 @@ setup(name='textfsm',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
           'Topic :: Software Development :: Libraries'],
-      requires=['six', 'future'],
       packages=['textfsm'],
+      install_requires=['six', 'future'],
       setup_requires=['pytest-runner'],
       tests_require=['pytest'])
