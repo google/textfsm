@@ -22,6 +22,11 @@ from __future__ import print_function
 import unittest
 from six import StringIO
 import textfsm
+try:
+  import regex as regexModule
+  useRegex = True
+except ImportError:
+  useRegex = False
 
 
 class UnitTestFSM(unittest.TestCase):
@@ -871,7 +876,6 @@ Start
         "[['1', 'A2', 'B1'], ['2', 'A2', 'B3'], ['3', '', 'B3']]",
         str(result))
 
-
   def testRepeated(self):
     """Repeated option should work ok."""
     tplt = """Value Repeated repeatedKey (\S+)
@@ -888,11 +892,45 @@ normal1 key1:value1 key2:value2 key3:value3 normal2 \n
 normal1 normal2 """
 
     t = textfsm.TextFSM(StringIO(tplt))
-    result = t.ParseText(data)
-    self.assertEqual(
-      "[[['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'normal1', 'normal2', []],"
-      + " [[], [], 'normal1', 'normal2', []]]",
-      str(result))
+    if useRegex is True:
+      result = t.ParseText(data)
+      self.assertEqual(
+        "[[['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'normal1', 'normal2', []],"
+        + " [[], [], 'normal1', 'normal2', []]]",
+        str(result))
+    else:
+      # test proper failure when falling back on re module
+      try:
+        result = t.ParseText(data)  # TODO: ensure this is not optimized out if tests are bytecode files
+        raise AssertionError("Expected a ModuleNotFoundError when using keyword 'Repeated' without 'regex' module")
+      except ModuleNotFoundError as e:
+        self.assertEqual(e.args[0], "Cannot use Repeated option without installing the regex module.")
+
+  def testTemp(self):
+    tplt = """Value Repeated repeatedKey (\S+)
+Value Repeated repeatedValue (\S+)
+Value Repeated repeatedUnused (\S+)
+
+Start
+  ^(${repeatedKey}:${repeatedValue} )+
+  ^record -> Record"""
+
+    data = """
+key1:value1 key2:value2 key3:value3 \n
+key4:value4 key5:value5 key6:value6 \n
+record"""
+
+    t = textfsm.TextFSM(StringIO(tplt))
+    try:
+      result = t.ParseText(data)
+    except ModuleNotFoundError as e:
+      if useRegex is True:
+        raise e
+      else:
+        return
+
+    for i in range(len(result)):
+      print(result[i])
 
 if __name__ == '__main__':
   unittest.main()
