@@ -148,7 +148,8 @@ class TextFSMOptions(object):
       self.value.value = []
 
     def OnClearVar(self):
-      self.value.value = []
+      if 'Filldown' not in self.value.OptionNames():
+       self.value.value = []
 
     def OnClearAllVar(self):
       self.value.value = []
@@ -168,6 +169,8 @@ class TextFSMOptions(object):
 
     def OnAssignVar(self):
       self._myvar = self.value.value
+      if "Repeated" in self.value.OptionNames():
+        self._myvar = self.value.values_list
 
     def OnClearVar(self):
       self.value.value = self._myvar
@@ -179,6 +182,10 @@ class TextFSMOptions(object):
     """Like Filldown, but upwards until it finds a non-empty entry."""
 
     def OnAssignVar(self):
+      # make sure repeated OnAssignVar runs first so value.value is set
+      for option in self.value.options:
+        if option.name is "Repeated":
+          option.OnAssignVar()
       # If value is set, copy up the results table, until we
       # see a set item.
       if self.value.value:
@@ -223,7 +230,7 @@ class TextFSMOptions(object):
       if match and match.groupdict():
         self._value.append(match.groupdict())
       else:
-        if "Repeated" in (optionClass.name for optionClass in self.value.options):
+        if "Repeated" in self.value.OptionNames():
           self._value.append(self.value.values_list)
         else:
           self._value.append(self.value.value)

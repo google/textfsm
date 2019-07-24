@@ -905,6 +905,7 @@ normal1 normal2 """
         result = t.ParseText(data)
 
   def testRepeatedList(self):
+    """Keywords Repeated and List should work together"""
     tplt = """Value List,Repeated repeatedKey (\S+)
 Value Repeated,List repeatedValue (\S+)
 Value Repeated,List repeatedUnused (\S+)
@@ -926,6 +927,69 @@ record"""
 
     self.assertEqual("[[[['key1', 'key2', 'key3'], ['key4', 'key5', 'key6']], [['value1', 'value2', 'value3']," +
                      " ['value4', 'value5', 'value6']], []]]",
+                     str(result)
+                     )
+
+  def testRepeatedFilldown(self):
+    """Keywords Repeated and Filldown should work together"""
+    tplt = """Value Filldown,Repeated repeatedKey (\S+)
+Value Repeated,Filldown repeatedValue (\S+)
+Value Required otherMatch (\S+)
+
+Start
+  ^record -> Record
+  ^(${repeatedKey}:${repeatedValue} )+
+  ^${otherMatch}
+  """
+
+    data = """
+key1:value1 key2:value2 key3:value3 \n
+key4:value4 key5:value5 key6:value6 \n
+foo \n
+bar \n
+record \n
+foobar \n
+record"""
+
+    t = textfsm.TextFSM(StringIO(tplt))
+    if useRegex is True:
+      result = t.ParseText(data)
+    else:
+      return
+
+    self.assertEqual("[[['key4', 'key5', 'key6'], ['value4', 'value5', 'value6'], 'bar'], [['key4', 'key5', 'key6'],"
+                     " ['value4', 'value5', 'value6'], 'foobar']]",
+                     str(result)
+                     )
+
+  def testRepeatedFillup(self):
+    """Keywords Repeated and Fillup should work together"""
+    tplt = """Value Fillup,Repeated repeatedKey (\S+)
+Value Repeated,Fillup repeatedValue (\S+)
+Value Required otherMatch (\S+)
+
+Start
+  ^record -> Record
+  ^(${repeatedKey}:${repeatedValue} )+
+  ^${otherMatch}
+  """
+
+    data = """
+foo \n
+bar \n
+record \n
+foobar \n
+key1:value1 key2:value2 key3:value3 \n
+record"""
+
+    t = textfsm.TextFSM(StringIO(tplt))
+    if useRegex is True:
+      result = t.ParseText(data)
+    else:
+      return
+
+    self.assertEqual("[[['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'bar'],"
+                     " [['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'foobar']]",
                      str(result)
                      )
 
