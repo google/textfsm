@@ -22,6 +22,7 @@ from __future__ import print_function
 import unittest
 from six import StringIO
 import textfsm
+from textfsm.parser import TextFSMTemplateError
 try:
   import regex as regexModule
   useRegex = True
@@ -900,7 +901,7 @@ normal1 normal2 """
         str(result))
     else:
       # test proper failure when falling back on re module
-      with self.assertRaises(ModuleNotFoundError,
+      with self.assertRaises(TextFSMTemplateError,
                              msg="Expected a ModuleNotFoundError when using keyword 'Repeated' without 'regex' module"):
         result = t.ParseText(data)
 

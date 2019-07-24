@@ -141,7 +141,7 @@ class TextFSMOptions(object):
 
     def OnAssignVar(self):
       if useRegex is not True:
-        raise ModuleNotFoundError("Cannot use Repeated option without installing the regex module.")
+        raise TextFSMTemplateError("Cannot use Repeated option without installing the regex module.")
       self.value.value = self.value.values_list
 
     def OnCreateOptions(self):
