@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright 2010 Google Inc. All Rights Reserved.
 #
@@ -18,9 +19,14 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
 
+from builtins import str
 import unittest
-from six import StringIO
+from io import StringIO
+
+
+
 import textfsm
 
 
@@ -394,43 +400,6 @@ class UnitTestFSM(unittest.TestCase):
     t = textfsm.TextFSM(f)
     self.assertEqual(str(t), buf_result)
 
-    # Complex template, multiple vars and states with comments (no var options).
-    buf = r"""# Header
-# Header 2
-Value Beer (.*)
-Value Wine (\w+)
-
-# An explanation.
-Start
-  ^hi there ${Wine}. -> Next.Record State1
-
-State1
-  ^\w
-  ^$Beer .. -> Start
-  # Some comments
-  ^$$ -> Next
-  ^$$ -> End
-
-End
-# Tail comment.
-"""
-
-    buf_result = r"""Value Beer (.*)
-Value Wine (\w+)
-
-Start
-  ^hi there ${Wine}. -> Next.Record State1
-
-State1
-  ^\w
-  ^$Beer .. -> Start
-  ^$$ -> Next
-  ^$$ -> End
-"""
-    f = StringIO(buf)
-    t = textfsm.TextFSM(f)
-    self.assertEqual(str(t), buf_result)
-
   def testParseText(self):
 
     # Trivial FSM, no records produced.
@@ -451,13 +420,13 @@ State1
     # Tests 'Next' & 'Record' actions.
     data = 'Matching text'
     result = t.ParseText(data)
-    self.assertEqual(str(result), "[['Matching text']]")
+    self.assertListEqual(result, [['Matching text']])
 
     # Matching two lines. Reseting FSM before Parsing.
     t.Reset()
     data = 'Matching text\nAnd again'
     result = t.ParseText(data)
-    self.assertEqual(str(result), "[['Matching text'], ['And again']]")
+    self.assertListEqual(result, [['Matching text'], ['And again']])
 
     # Two Variables and singular options.
     tplt = ('Value Required boo (one)\nValue Filldown hoo (two)\n\n'
@@ -469,15 +438,14 @@ State1
     # Tests 'Filldown' and 'Required' options.
     data = 'two\none'
     result = t.ParseText(data)
-    self.assertEqual(str(result), "[['one', 'two']]")
+    self.assertListEqual(result, [['one', 'two']])
 
     t = textfsm.TextFSM(StringIO(tplt))
     # Matching two lines. Two records returned due to 'Filldown' flag.
     data = 'two\none\none'
     t.Reset()
     result = t.ParseText(data)
-    self.assertEqual(
-        str(result), "[['one', 'two'], ['one', 'two']]")
+    self.assertListEqual(result, [['one', 'two'], ['one', 'two']])
 
     # Multiple Variables and options.
     tplt = ('Value Required,Filldown boo (one)\n'
@@ -487,8 +455,7 @@ State1
     t = textfsm.TextFSM(StringIO(tplt))
     data = 'two\none\none'
     result = t.ParseText(data)
-    self.assertEqual(
-        str(result), "[['one', 'two'], ['one', 'two']]")
+    self.assertListEqual(result, [['one', 'two'], ['one', 'two']])
 
   def testParseTextToDicts(self):
 
@@ -510,13 +477,14 @@ State1
     # Tests 'Next' & 'Record' actions.
     data = 'Matching text'
     result = t.ParseTextToDicts(data)
-    self.assertEqual(str(result), "[{'boo': 'Matching text'}]")
+    self.assertListEqual(result, [{'boo': 'Matching text'}])
 
     # Matching two lines. Reseting FSM before Parsing.
     t.Reset()
     data = 'Matching text\nAnd again'
     result = t.ParseTextToDicts(data)
-    self.assertEqual(str(result), "[{'boo': 'Matching text'}, {'boo': 'And again'}]")
+    self.assertListEqual(result,
+                     [{'boo': 'Matching text'}, {'boo': 'And again'}])
 
     # Two Variables and singular options.
     tplt = ('Value Required boo (one)\nValue Filldown hoo (two)\n\n'
@@ -528,15 +496,15 @@ State1
     # Tests 'Filldown' and 'Required' options.
     data = 'two\none'
     result = t.ParseTextToDicts(data)
-    self.assertEqual(str(result), "[{'hoo': 'two', 'boo': 'one'}]")
+    self.assertListEqual(result, [{'hoo': 'two', 'boo': 'one'}])
 
     t = textfsm.TextFSM(StringIO(tplt))
     # Matching two lines. Two records returned due to 'Filldown' flag.
     data = 'two\none\none'
     t.Reset()
     result = t.ParseTextToDicts(data)
-    self.assertEqual(
-        str(result), "[{'hoo': 'two', 'boo': 'one'}, {'hoo': 'two', 'boo': 'one'}]")
+    self.assertListEqual(
+        result, [{'hoo': 'two', 'boo': 'one'}, {'hoo': 'two', 'boo': 'one'}])
 
     # Multiple Variables and options.
     tplt = ('Value Required,Filldown boo (one)\n'
@@ -546,8 +514,8 @@ State1
     t = textfsm.TextFSM(StringIO(tplt))
     data = 'two\none\none'
     result = t.ParseTextToDicts(data)
-    self.assertEqual(
-        str(result), "[{'hoo': 'two', 'boo': 'one'}, {'hoo': 'two', 'boo': 'one'}]")
+    self.assertListEqual(
+        result, [{'hoo': 'two', 'boo': 'one'}, {'hoo': 'two', 'boo': 'one'}])
 
   def testParseNullText(self):
 
@@ -558,7 +526,7 @@ State1
     # Null string
     data = ''
     result = t.ParseText(data)
-    self.assertEqual(result, [])
+    self.assertListEqual(result, [])
 
   def testReset(self):
 
@@ -568,7 +536,7 @@ State1
     result1 = t.ParseText(data)
     t.Reset()
     result2 = t.ParseText(data)
-    self.assertEqual(str(result1), str(result2))
+    self.assertListEqual(result1, result2)
 
     tplt = ('Value boo (one)\nValue hoo (two)\n\n'
             'Start\n  ^$boo -> State1\n\n'
@@ -595,7 +563,7 @@ State1
     t = textfsm.TextFSM(StringIO(tplt))
     data = 'one\ntwo\nonE\ntwO'
     result = t.ParseText(data)
-    self.assertEqual(str(result), ("[['onE', 'two']]"))
+    self.assertListEqual(result, [['onE', 'two']])
 
     # Clearall, with Filldown variable.
     # Tests 'Clearall'.
@@ -607,7 +575,7 @@ State1
     t = textfsm.TextFSM(StringIO(tplt))
     data = 'one\ntwo'
     result = t.ParseText(data)
-    self.assertEqual(str(result), ("[['', 'two']]"))
+    self.assertListEqual(result, [['', 'two']])
 
   def testContinue(self):
 
@@ -618,8 +586,7 @@ State1
     t = textfsm.TextFSM(StringIO(tplt))
     data = 'one\non0'
     result = t.ParseText(data)
-    self.assertEqual(
-        str(result), ("[['one', 'one'], ['on0', 'on0']]"))
+    self.assertListEqual(result, [['one', 'one'], ['on0', 'on0']])
 
   def testError(self):
 
@@ -657,9 +624,7 @@ State1
     t = textfsm.TextFSM(StringIO(tplt))
     data = 'one\ntwo\non0\ntw0'
     result = t.ParseText(data)
-    self.assertEqual(
-        str(result), ("[[['one'], 'two'], "
-                      "[['on0'], 'tw0']]"))
+    self.assertListEqual(result, [[['one'], 'two'], [['on0'], 'tw0']])
 
     tplt = ('Value List,Filldown boo (on.)\n'
             'Value hoo (on.)\n\n'
@@ -669,10 +634,9 @@ State1
     t = textfsm.TextFSM(StringIO(tplt))
     data = 'one\non0\non1'
     result = t.ParseText(data)
-    self.assertEqual(
-        str(result), ("[[['one'], 'one'], "
-                      "[['one', 'on0'], 'on0'], "
-                      "[['one', 'on0', 'on1'], 'on1']]"))
+    self.assertEqual(result, ([[['one'], 'one'],
+                               [['one', 'on0'], 'on0'],
+                               [['one', 'on0', 'on1'], 'on1']]))
 
     tplt = ('Value List,Required boo (on.)\n'
             'Value hoo (tw.)\n\n'
@@ -682,39 +646,54 @@ State1
     t = textfsm.TextFSM(StringIO(tplt))
     data = 'one\ntwo\ntw2'
     result = t.ParseText(data)
-    self.assertEqual(str(result), ("[[['one'], 'two']]"))
+    self.assertListEqual(result, [[['one'], 'two']])
 
 
   def testNestedMatching(self):
       """
-      Ensures that List-type values with nested regex capture groups are parsed correctly
-      as a list of dictionaries.
+      Ensures that List-type values with nested regex capture groups are parsed
+      correctly as a list of dictionaries.
 
-      Additionaly, another value is used with the same group-name as one of the nested groups to ensure that
-      there are no conflicts when the same name is used.
+      Additionaly, another value is used with the same group-name as one of the
+      nested groups to ensure that there are no conflicts when the same name is
+      used.
       """
       tplt = (
-          "Value List foo ((?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)\n"  # A nested group is called "name"
-          "Value name (\w+)\n\n"  # A regular value is called "name"
-          "Start\n  ^\s*${foo}\n  ^\s*${name}\n  ^\s*$$ -> Record"  # "${name}" here refers to the Value called "name"
+          # A nested group is called "name"
+          r"Value List foo ((?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)"
+          "\n"
+          # A regular value is called "name"
+          r"Value name (\w+)"
+          # "${name}" here refers to the Value called "name"
+          "\n\nStart\n"
+          r"  ^\s*${foo}"
+          "\n"
+          r"  ^\s*${name}"
+          "\n"
+          r"  ^\s*$$ -> Record"
       )
       t = textfsm.TextFSM(StringIO(tplt))
-      data = " Bob: 32 NC\n Alice: 27 NY\n Jeff: 45 CA\nJulia\n\n"  # Julia should be parsed as "name" separately
+      # Julia should be parsed as "name" separately
+      data = " Bob: 32 NC\n Alice: 27 NY\n Jeff: 45 CA\nJulia\n\n"
       result = t.ParseText(data)
-      self.assertEqual(
+      self.assertListEqual(
           result, (
               [[[
-                {'name': 'Bob', 'age': '32', 'state': 'NC'},
-                {'name': 'Alice', 'age': '27', 'state': 'NY'},
-                {'name': 'Jeff', 'age': '45', 'state': 'CA'}
+                  {'name': 'Bob', 'age': '32', 'state': 'NC'},
+                  {'name': 'Alice', 'age': '27', 'state': 'NY'},
+                  {'name': 'Jeff', 'age': '45', 'state': 'CA'}
               ], 'Julia']]
-      ))
+          )
+      )
 
   def testNestedNameConflict(self):
       tplt = (
           # Two nested groups are called "name"
-          "Value List foo ((?P<name>\w+)\s+(?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)\n"
-          "Start\n  ^\s*${foo}\n  ^\s*$$ -> Record"
+          r"Value List foo ((?P<name>\w+)\s+(?P<name>\w+):\s+(?P<age>\d+)\s+(?P<state>\w{2})\s*)"
+          "\nStart\n"
+          r"^\s*${foo}"
+          "\n  ^"
+          r"\s*$$ -> Record"
       )
       self.assertRaises(textfsm.TextFSMTemplateError, textfsm.TextFSM, StringIO(tplt))
 
@@ -731,7 +710,7 @@ State1
     self.assertEqual(t.GetValuesByAttrib('Filldown'), [])
     result = t.GetValuesByAttrib('Required')
     result.sort()
-    self.assertEqual(result, ['boo', 'hoo'])
+    self.assertListEqual(result, ['boo', 'hoo'])
 
   def testStateChange(self):
 
@@ -770,21 +749,21 @@ State1
 
     data = 'Matching text'
     result = t.ParseText(data)
-    self.assertEqual(str(result), "[['Matching text']]")
+    self.assertListEqual(result, [['Matching text']])
 
     # EOF explicitly suppressed in template.
     tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> Next\n\nEOF\n'
     t = textfsm.TextFSM(StringIO(tplt))
 
     result = t.ParseText(data)
-    self.assertEqual(str(result), '[]')
+    self.assertListEqual(result, [])
 
     # Implicit EOF suppressed by argument.
     tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> Next\n'
     t = textfsm.TextFSM(StringIO(tplt))
 
     result = t.ParseText(data, eof=False)
-    self.assertEqual(str(result), '[]')
+    self.assertListEqual(result, [])
 
   def testEnd(self):
 
@@ -794,21 +773,21 @@ State1
     data = 'Matching text A\nMatching text B'
 
     result = t.ParseText(data)
-    self.assertEqual(str(result), '[]')
+    self.assertListEqual(result, [])
 
     # End State, with explicit Record.
     tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> Record End\n'
     t = textfsm.TextFSM(StringIO(tplt))
 
     result = t.ParseText(data)
-    self.assertEqual(str(result), "[['Matching text A']]")
+    self.assertListEqual(result, [['Matching text A']])
 
     # EOF state transition is followed by implicit End State.
     tplt = 'Value boo (.*)\n\nStart\n  ^$boo -> EOF\n  ^$boo -> Record\n'
     t = textfsm.TextFSM(StringIO(tplt))
 
     result = t.ParseText(data)
-    self.assertEqual(str(result), "[['Matching text A']]")
+    self.assertListEqual(result, [['Matching text A']])
 
   def testInvalidRegexp(self):
 
@@ -823,7 +802,7 @@ State1
     t = textfsm.TextFSM(StringIO(tplt))
     data = 'f\nfo\nfoo\n'
     result = t.ParseText(data)
-    self.assertEqual(str(result), "[['f'], ['fo'], ['foo']]")
+    self.assertListEqual(result, [['f'], ['fo'], ['foo']])
 
   def testReEnteringState(self):
     """Issue 2. TextFSM should leave file pointer at top of template file."""
@@ -856,9 +835,69 @@ Start
 """
     t = textfsm.TextFSM(StringIO(tplt))
     result = t.ParseText(data)
-    self.assertEqual(
-        "[['1', 'A2', 'B1'], ['2', 'A2', 'B3'], ['3', '', 'B3']]",
-        str(result))
+    self.assertListEqual(
+        result, [['1', 'A2', 'B1'], ['2', 'A2', 'B3'], ['3', '', 'B3']])
+
+
+class UnitTestUnicode(unittest.TestCase):
+  """Tests the FSM engine."""
+
+  def testFSMValue(self):
+    # Check basic line is parsed.
+    line = 'Value beer (\\S+Δ)'
+    v = textfsm.TextFSMValue()
+    v.Parse(line)
+    self.assertEqual(v.name, 'beer')
+    self.assertEqual(v.regex, '(\\S+Δ)')
+    self.assertEqual(v.template, '(?P<beer>\\S+Δ)')
+    self.assertFalse(v.options)
+
+  def testFSMRule(self):
+    # Basic line, no action
+    line = '  ^A beer called ${beer}Δ'
+    r = textfsm.TextFSMRule(line)
+    self.assertEqual(r.match, '^A beer called ${beer}Δ')
+    self.assertEqual(r.line_op, '')
+    self.assertEqual(r.new_state, '')
+    self.assertEqual(r.record_op, '')
+
+  def testTemplateValue(self):
+    # Complex template, multiple vars and states with comments (no var options).
+    buf = """# Header
+# Header 2
+Value Beer (.*)
+Value Wine (\\w+)
+
+# An explanation with a unicode character Δ
+Start
+  ^hi there ${Wine}. -> Next.Record State1
+
+State1
+  ^\\wΔ
+  ^$Beer .. -> Start
+  # Some comments
+  ^$$ -> Next
+  ^$$ -> End
+
+End
+# Tail comment.
+"""
+
+    buf_result = """Value Beer (.*)
+Value Wine (\\w+)
+
+Start
+  ^hi there ${Wine}. -> Next.Record State1
+
+State1
+  ^\\wΔ
+  ^$Beer .. -> Start
+  ^$$ -> Next
+  ^$$ -> End
+"""
+    f = StringIO(buf)
+    t = textfsm.TextFSM(f)
+    self.assertEqual(str(t), buf_result)
 
 
 if __name__ == '__main__':

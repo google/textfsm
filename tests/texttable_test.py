@@ -19,10 +19,11 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
+
+from builtins import range
 import unittest
-# pylint: disable=redefined-builtin
-from six.moves import range
-from six.moves import StringIO
+from io import StringIO
 from textfsm import terminal
 from textfsm import texttable
 
@@ -35,6 +36,7 @@ class UnitTestRow(unittest.TestCase):
   """Tests texttable.Row() class."""
 
   def setUp(self):
+    super(UnitTestRow, self).setUp()
     self.row = texttable.Row()
     self.row._keys = ['a', 'b', 'c']
     self.row._values = ['1', '2', '3']

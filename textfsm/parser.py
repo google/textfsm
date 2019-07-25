@@ -27,12 +27,18 @@ for each input entity.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
+
 
 import getopt
 import inspect
 import re
 import string
 import sys
+from builtins import object   # pylint: disable=redefined-builtin
+from builtins import str      # pylint: disable=redefined-builtin
+from builtins import zip      # pylint: disable=redefined-builtin
+import six
 
 
 class Error(Exception):
@@ -82,6 +88,7 @@ class TextFSMOptions(object):
     """Factory methods for option class.
 
     Attributes:
+      name: The name of the option.
       value: A TextFSMValue, the parent Value.
     """
 
@@ -169,14 +176,15 @@ class TextFSMOptions(object):
     """Value constitutes part of the Key of the record."""
 
   class List(OptionBase):
-    """
+    r"""
     Value takes the form of a list.
 
     If the value regex contains nested match groups in the form (?P<name>regex),
     instead of adding a string to the list, we add a dictionary of the groups.
 
     Eg.
-    Value List ((?P<name>\w+)\s+(?P<age>\d+)) would create results like [{'name': 'Bob', 'age': 32}]
+    Value List ((?P<name>\w+)\s+(?P<age>\d+)) would create results like:
+        [{'name': 'Bob', 'age': 32}]
 
     Do not give nested groups the same name as other values in the template.
     """
@@ -187,15 +195,15 @@ class TextFSMOptions(object):
     def OnAssignVar(self):
       # Nested matches will have more than one match group
       if self.value.compiled_regex.groups > 1:
-          match = self.value.compiled_regex.match(self.value.value)
+        match = self.value.compiled_regex.match(self.value.value)
       else:
-          match = None
-      # If the List-value regex has match-groups defined, add the resulting dict to the list
-      # Otherwise, add the string that was matched
+        match = None
+      # If the List-value regex has match-groups defined, add the resulting
+      # dict to the list. Otherwise, add the string that was matched
       if match and match.groupdict():
-          self._value.append(match.groupdict())
+        self._value.append(match.groupdict())
       else:
-          self._value.append(self.value.value)
+        self._value.append(self.value.value)
 
     def OnClearVar(self):
       if 'Filldown' not in self.value.OptionNames():
@@ -221,6 +229,7 @@ class TextFSMValue(object):
   '(.*) is the regular expression to match in the input data.
 
   Attributes:
+    compiled_regex: (regexp), Compiled regex for nested matching of List values.
     max_name_len: (int), maximum character length os a variable name.
     name: (str), Name of the value.
     options: (list), A list of current Value Options.
@@ -311,12 +320,13 @@ class TextFSMValue(object):
 
     self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
 
-    # Compile and store the regex object only on List-type values for use in nested matching
-    if any(map(lambda x: isinstance(x, TextFSMOptions.List), self.options)):
-        try:
-            self.compiled_regex = re.compile(self.regex)
-        except re.error as e:
-            raise TextFSMTemplateError(str(e))
+    # Compile and store the regex object only on List-type values for use in
+    # nested matching
+    if any([isinstance(x, TextFSMOptions.List) for x in self.options]):
+      try:
+        self.compiled_regex = re.compile(self.regex)
+      except re.error as e:
+        raise TextFSMTemplateError(str(e))
 
   def _AddOption(self, name):
     """Add an option to this Value.
@@ -359,7 +369,6 @@ class TextFSMValue(object):
 
 class CopyableRegexObject(object):
   """Like a re.RegexObject, but can be copied."""
-  # pylint: disable=C6409
 
   def __init__(self, pattern):
     self.pattern = pattern
@@ -580,7 +589,7 @@ class TextFSM(object):
     self.Reset()
 
   def __str__(self):
-    """Returns the FSM template, mimic the input file."""
+    """Returns the FSM template, mimicing the input file."""
 
     result = '\n'.join([str(value) for value in self.values])
     result += '\n'
@@ -701,7 +710,8 @@ class TextFSM(object):
       # Blank line signifies end of Value definitions.
       if not line:
         return
-
+      if not isinstance(line, six.string_types):
+        line = line.decode('utf-8')
       # Skip commented lines.
       if self.comment_regex.match(line):
         continue
@@ -769,7 +779,8 @@ class TextFSM(object):
     for line in template:
       self._line_num += 1
       line = line.rstrip()
-
+      if not isinstance(line, six.string_types):
+        line = line.decode('utf-8')
       # First line is state definition
       if line and not self.comment_regex.match(line):
          # Ensure statename has valid syntax and is not a reserved word.
@@ -796,7 +807,8 @@ class TextFSM(object):
       # Finish rules processing on blank line.
       if not line:
         break
-
+      if not isinstance(line, six.string_types):
+        line = line.decode('utf-8')
       if self.comment_regex.match(line):
         continue
 
@@ -963,7 +975,7 @@ class TextFSM(object):
     """
     _value = self._GetValue(value)
     if _value is not None:
-        _value.AssignVar(matched.group(value))
+      _value.AssignVar(matched.group(value))
 
   def _Operations(self, rule, line):
     """Operators on the data record.

@@ -19,15 +19,16 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
 
 import copy
 import os
 import re
 import unittest
 
+from io import StringIO
 from textfsm import clitable
 from textfsm import copyable_regex_object
-from six.moves import StringIO
 
 
 class UnitTestIndexTable(unittest.TestCase):
@@ -88,6 +89,7 @@ class UnitTestCliTable(unittest.TestCase):
   """Tests the CliTable class."""
 
   def setUp(self):
+    super(UnitTestCliTable, self).setUp()
     clitable.CliTable.INDEX = {}
     self.clitable = clitable.CliTable('default_index', 'testdata')
     self.input_data = ('a b c\n'
