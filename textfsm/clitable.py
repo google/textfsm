@@ -24,11 +24,17 @@ output combinations and store the data in a TextTable.
 Is the glue between an automated command scraping program (such as RANCID) and
 the TextFSM output parser.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import copy
 import os
 import re
 import threading
+from builtins import object    # pylint: disable=redefined-builtin
+from builtins import str       # pylint: disable=redefined-builtin
 import textfsm
 
 from textfsm import copyable_regex_object
@@ -174,7 +180,6 @@ class CliTable(texttable.TextTable):
   _lock = threading.Lock()
   INDEX = {}
 
-  # pylint: disable=C6409
   def synchronised(func):
     """Synchronisation decorator."""
 
@@ -186,7 +191,6 @@ class CliTable(texttable.TextTable):
       finally:
         main_obj._lock.release()                # pylint: disable=W0212
     return Wrapper
-    # pylint: enable=C6409
 
   @synchronised
   def __init__(self, index_file=None, template_dir=None):
@@ -327,7 +331,6 @@ class CliTable(texttable.TextTable):
       return value
 
   def _Completion(self, match):
-    # pylint: disable=C6114
     r"""Replaces double square brackets with variable length completion.
 
     Completion cannot be mixed with regexp matching or '\' characters
@@ -349,7 +352,7 @@ class CliTable(texttable.TextTable):
     # pylint: disable=E1002
     return super(CliTable, self).LabelValueTable(keys)
 
-  # pylint: disable=W0622,C6409
+  # pylint: disable=W0622
   def sort(self, cmp=None, key=None, reverse=False):
     """Overrides sort func to use the KeyValue for the key."""
     if not key and self._keys:

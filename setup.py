@@ -45,5 +45,9 @@ setup(name='textfsm',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
           'Topic :: Software Development :: Libraries'],
-      requires=['six', 'regex'],
-      packages=['textfsm'])
+      packages=['textfsm'],
+      include_package_data=True,
+      package_data={'textfsm': ['../testdata/*']},
+      install_requires=['six', 'future', 'regex'],
+      setup_requires=['pytest-runner'],
+      tests_require=['pytest'])

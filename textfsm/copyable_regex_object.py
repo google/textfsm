@@ -21,10 +21,11 @@ try:
 except ImportError:
   import re as regexModule
 
+from builtins import object    # pylint: disable=redefined-builtin
+
 
 class CopyableRegexObject(object):
-  """Like a regex.RegexObject, but can be copied."""
-  # pylint: disable=C6409
+  """Like a re.RegexObject, but can be copied."""
 
   def __init__(self, pattern):
     self.pattern = pattern
