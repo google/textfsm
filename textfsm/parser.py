@@ -191,7 +191,7 @@ class TextFSMOptions(object):
     def OnAssignVar(self):
       # make sure repeated OnAssignVar runs first so value.value is set
       for option in self.value.options:
-        if option.name is "Repeated":
+        if option.name == "Repeated":
           option.OnAssignVar()
       # If value is set, copy up the results table, until we
       # see a set item.

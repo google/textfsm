@@ -920,10 +920,10 @@ normal1 normal2 """
     t = textfsm.TextFSM(StringIO(tplt))
     if useRegex is True:
       result = t.ParseText(data)
-      self.assertEqual(
-        "[[['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'normal1', 'normal2', []],"
-        + " [[], [], 'normal1', 'normal2', []]]",
-        str(result))
+      self.assertListEqual(
+        [[['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'normal1', 'normal2', []],
+         [[], [], 'normal1', 'normal2', []]],
+        result)
     else:
       # test proper failure when falling back on re module
       with self.assertRaises(TextFSMTemplateError,
@@ -951,9 +951,9 @@ record"""
     else:
       return
 
-    self.assertEqual("[[[['key1', 'key2', 'key3'], ['key4', 'key5', 'key6']], [['value1', 'value2', 'value3']," +
-                     " ['value4', 'value5', 'value6']], []]]",
-                     str(result)
+    self.assertListEqual([[[['key1', 'key2', 'key3'], ['key4', 'key5', 'key6']], [['value1', 'value2', 'value3'],
+                      ['value4', 'value5', 'value6']], []]],
+                     result
                      )
 
   def testRepeatedFilldown(self):
@@ -983,9 +983,9 @@ record"""
     else:
       return
 
-    self.assertEqual("[[['key4', 'key5', 'key6'], ['value4', 'value5', 'value6'], 'bar'], [['key4', 'key5', 'key6'],"
-                     " ['value4', 'value5', 'value6'], 'foobar']]",
-                     str(result)
+    self.assertListEqual([[['key4', 'key5', 'key6'], ['value4', 'value5', 'value6'], 'bar'], [['key4', 'key5', 'key6'],
+                     ['value4', 'value5', 'value6'], 'foobar']],
+                     result
                      )
 
   def testRepeatedFillup(self):
@@ -1014,9 +1014,9 @@ record"""
     else:
       return
 
-    self.assertEqual("[[['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'bar'],"
-                     " [['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'foobar']]",
-                     str(result)
+    self.assertListEqual([[['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'bar'],
+                     [['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'foobar']],
+                     result
                      )
 
 
