@@ -23,7 +23,7 @@ from __future__ import unicode_literals
 
 import copy
 import os
-import regex
+import re
 import unittest
 
 from io import StringIO
@@ -106,11 +106,11 @@ class UnitTestCliTable(unittest.TestCase):
   def testCompletion(self):
     """Tests '[[]]' syntax replacement."""
     indx = clitable.CliTable()
-    self.assertEqual('abc', regex.sub(r'(\[\[.+?\]\])', indx._Completion, 'abc'))
+    self.assertEqual('abc', re.sub(r'(\[\[.+?\]\])', indx._Completion, 'abc'))
     self.assertEqual('a(b(c)?)?',
-                     regex.sub(r'(\[\[.+?\]\])', indx._Completion, 'a[[bc]]'))
+                     re.sub(r'(\[\[.+?\]\])', indx._Completion, 'a[[bc]]'))
     self.assertEqual('a(b(c)?)? de(f)?',
-                     regex.sub(r'(\[\[.+?\]\])', indx._Completion,
+                     re.sub(r'(\[\[.+?\]\])', indx._Completion,
                             'a[[bc]] de[[f]]'))
 
   def testRepeatRead(self):
