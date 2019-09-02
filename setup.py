@@ -46,6 +46,11 @@ setup(name='textfsm',
           'Programming Language :: Python :: 3',
           'Topic :: Software Development :: Libraries'],
       packages=['textfsm'],
+      entry_points={
+        'console_scripts': [
+            'textfsm=textfsm.parser:main'
+        ]
+      },      
       include_package_data=True,
       package_data={'textfsm': ['../testdata/*']},
       install_requires=['six', 'future'],
