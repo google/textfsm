@@ -313,8 +313,10 @@ class TextFSMValue(object):
       raise TextFSMTemplateError(
           "Invalid Value name '%s' or name too long." % self.name)
 
+    square_brackets = r'[^\]?\[[^]]*\]'
     if (not re.match(r'^\(.*\)$', self.regex) or
-        self.regex.count('(') != self.regex.count(')')):
+        (re.sub(square_brackets, '', self.regex).count('(') !=
+         re.sub(square_brackets, '', self.regex).count(')'))):
       raise TextFSMTemplateError(
           "Value '%s' must be contained within a '()' pair." % self.regex)
 
