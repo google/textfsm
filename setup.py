@@ -54,5 +54,4 @@ setup(name='textfsm',
       include_package_data=True,
       package_data={'textfsm': ['../testdata/*']},
       install_requires=['six', 'future'],
-      setup_requires=['pytest-runner'],
-      tests_require=['pytest'])
+     )
