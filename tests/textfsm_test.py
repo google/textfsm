@@ -79,7 +79,7 @@ class UnitTestFSM(unittest.TestCase):
     # Escaped braces don't count.
     self.assertRaises(textfsm.TextFSMTemplateError,
                       v.Parse,
-                      'Value beer (boo\[)\]hoo)')
+                      r'Value beer (boo\[)\]hoo)')
 
     # String function.
     v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
