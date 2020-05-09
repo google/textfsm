@@ -22,7 +22,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import fcntl
+try:
+  # Import fails on Windows machines.
+  import fcntl
+except (ImportError, ModuleNotFoundError):
+  pass
 import getopt
 import os
 import re
@@ -173,7 +177,7 @@ def TerminalSize():
     with open(os.ctermid()) as tty_instance:
       length_width = struct.unpack(
           'hh', fcntl.ioctl(tty_instance.fileno(), termios.TIOCGWINSZ, '1234'))
-  except (IOError, OSError):
+  except (IOError, OSError, NameError):
     try:
       length_width = (int(os.environ['LINES']),
                       int(os.environ['COLUMNS']))
