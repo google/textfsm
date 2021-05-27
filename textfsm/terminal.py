@@ -25,6 +25,8 @@ from __future__ import unicode_literals
 try:
   # Import fails on Windows machines.
   import fcntl
+  import termios
+  import tty
 except (ImportError, ModuleNotFoundError):
   pass
 import getopt
@@ -32,9 +34,7 @@ import os
 import re
 import struct
 import sys
-import termios
 import time
-import tty
 from builtins import object   # pylint: disable=redefined-builtin
 from builtins import str      # pylint: disable=redefined-builtin
 
@@ -204,7 +204,7 @@ def LineWrap(text, omit_sgr=False):
     line_length = 0
     for (index, token) in enumerate(token_list):
       # Skip null tokens.
-      if token is '':
+      if token == '':
         continue
 
       if sgr_re.match(token):
