@@ -1,0 +1,7 @@
+This is an example to demonstrate the usage of the 'repeated' keyword, which enables one variable to have multiple captures on one line.
+
+
+normaldata1.1 normaldata1.2 key1.1:data1.1, key1.2:data1.2, key1.3:data1.3, normaldata1.3 normaldata1.3
+normaldata2.1 normaldata2.2 key2.1:data2.1, key2.2:data2.2, normaldata2.3 normaldata2.4
+normaldata3.1 normaldata3.2 normaldata3.3 normaldata3.4
+normaldata4.1 normaldata4.2 key4.1:data4.1, key4.2:data4.2, key4.3:data4.3, normaldata4.3 normaldata4.3

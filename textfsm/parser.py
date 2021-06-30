@@ -32,13 +32,21 @@ from __future__ import unicode_literals
 
 import getopt
 import inspect
-import re
 import string
 import sys
+import six
 from builtins import object   # pylint: disable=redefined-builtin
 from builtins import str      # pylint: disable=redefined-builtin
 from builtins import zip      # pylint: disable=redefined-builtin
-import six
+import warnings
+warnings.simplefilter("always")
+try:
+  import regex as regexModule
+  useRegex = True
+except ImportError:
+  import re as regexModule
+  warnings.warn("Could not locate regex module. Defaulting to re. Repeated keyword disabled.", ImportWarning)
+  useRegex = False
 
 
 class Error(Exception):
@@ -125,12 +133,33 @@ class TextFSMOptions(object):
       obj = getattr(cls, obj_name)
       if inspect.isclass(obj) and issubclass(obj, cls.OptionBase):
         valid_options.append(obj_name)
+    if useRegex is not True:
+      valid_options.remove("Repeated")
     return valid_options
 
   @classmethod
   def GetOption(cls, name):
     """Returns the class of the requested option name."""
     return getattr(cls, name)
+
+  class Repeated(OptionBase):
+    """Will use regex module's 'captures' behavior to get all repeated
+     values instead of just the last value as re would."""
+
+    def OnAssignVar(self):
+      if useRegex is not True:
+        raise TextFSMTemplateError("Cannot use Repeated option without installing the regex module.")
+      self.value.value = self.value.values_list
+
+    def OnCreateOptions(self):
+      self.value.value = []
+
+    def OnClearVar(self):
+      if 'Filldown' not in self.value.OptionNames():
+       self.value.value = []
+
+    def OnClearAllVar(self):
+      self.value.value = []
 
   class Required(OptionBase):
     """The Value must be non-empty for the row to be recorded."""
@@ -147,6 +176,8 @@ class TextFSMOptions(object):
 
     def OnAssignVar(self):
       self._myvar = self.value.value
+      if "Repeated" in self.value.OptionNames():
+        self._myvar = self.value.values_list
 
     def OnClearVar(self):
       self.value.value = self._myvar
@@ -158,6 +189,10 @@ class TextFSMOptions(object):
     """Like Filldown, but upwards until it finds a non-empty entry."""
 
     def OnAssignVar(self):
+      # make sure repeated OnAssignVar runs first so value.value is set
+      for option in self.value.options:
+        if option.name == "Repeated":
+          option.OnAssignVar()
       # If value is set, copy up the results table, until we
       # see a set item.
       if self.value.value:
@@ -203,7 +238,10 @@ class TextFSMOptions(object):
       if match and match.groupdict():
         self._value.append(match.groupdict())
       else:
-        self._value.append(self.value.value)
+        if "Repeated" in self.value.OptionNames():
+          self._value.append(self.value.values_list)
+        else:
+          self._value.append(self.value.value)
 
     def OnClearVar(self):
       if 'Filldown' not in self.value.OptionNames():
@@ -247,12 +285,17 @@ class TextFSMValue(object):
     self.options = []
     self.regex = None
     self.value = None
+    self.values_list = None
     self.fsm = fsm
     self._options_cls = options_class
 
   def AssignVar(self, value):
     """Assign a value to this Value."""
-    self.value = value
+    try:
+      self.value = value[-1]
+    except IndexError:
+      self.value = ""
+    self.values_list = value
     # Call OnAssignVar on options.
     _ = [option.OnAssignVar() for option in self.options]
 
@@ -314,20 +357,20 @@ class TextFSMValue(object):
           "Invalid Value name '%s' or name too long." % self.name)
 
     square_brackets = r'[^\]?\[[^]]*\]'
-    regex_without_brackets = re.sub(square_brackets, '', self.regex)
-    if (not re.match(r'^\(.*\)$', self.regex) or
+    regex_without_brackets = regexModule.sub(square_brackets, '', self.regex)
+    if (not regexModule.match(r'^\(.*\)$', self.regex) or
         regex_without_brackets.count('(') != regex_without_brackets.count(')')):
       raise TextFSMTemplateError(
           "Value '%s' must be contained within a '()' pair." % self.regex)
 
-    self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
+    self.template = regexModule.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
 
     # Compile and store the regex object only on List-type values for use in
     # nested matching
     if any([isinstance(x, TextFSMOptions.List) for x in self.options]):
       try:
-        self.compiled_regex = re.compile(self.regex)
-      except re.error as e:
+        self.compiled_regex = regexModule.compile(self.regex)
+      except regexModule.error as e:
         raise TextFSMTemplateError(str(e))
 
   def _AddOption(self, name):
@@ -374,7 +417,7 @@ class CopyableRegexObject(object):
 
   def __init__(self, pattern):
     self.pattern = pattern
-    self.regex = re.compile(pattern)
+    self.regex = regexModule.compile(pattern)
 
   def match(self, *args, **kwargs):
     return self.regex.match(*args, **kwargs)
@@ -411,7 +454,7 @@ class TextFSMRule(object):
     line_num: Integer row number of Value.
   """
   # Implicit default is '(regexp) -> Next.NoRecord'
-  MATCH_ACTION = re.compile(r'(?P<match>.*)(\s->(?P<action>.*))')
+  MATCH_ACTION = regexModule.compile(r'(?P<match>.*)(\s->(?P<action>.*))')
 
   # The structure to the right of the '->'.
   LINE_OP = ('Continue', 'Next', 'Error')
@@ -427,11 +470,11 @@ class TextFSMRule(object):
   NEWSTATE_RE = r'(?P<new_state>\w+|\".*\")'
 
   # Compound operator (line and record) with optional new state.
-  ACTION_RE = re.compile(r'\s+%s(\s+%s)?$' % (OPERATOR_RE, NEWSTATE_RE))
+  ACTION_RE = regexModule.compile(r'\s+%s(\s+%s)?$' % (OPERATOR_RE, NEWSTATE_RE))
   # Record operator with optional new state.
-  ACTION2_RE = re.compile(r'\s+%s(\s+%s)?$' % (RECORD_OP_RE, NEWSTATE_RE))
+  ACTION2_RE = regexModule.compile(r'\s+%s(\s+%s)?$' % (RECORD_OP_RE, NEWSTATE_RE))
   # Default operators with optional new state.
-  ACTION3_RE = re.compile(r'(\s+%s)?$' % (NEWSTATE_RE))
+  ACTION3_RE = regexModule.compile(r'(\s+%s)?$' % (NEWSTATE_RE))
 
   def __init__(self, line, line_num=-1, var_map=None):
     """Initialise a new rule object.
@@ -477,7 +520,7 @@ class TextFSMRule(object):
     try:
       # Work around a regression in Python 2.6 that makes RE Objects uncopyable.
       self.regex_obj = CopyableRegexObject(self.regex)
-    except re.error:
+    except regexModule.error:
       raise TextFSMTemplateError(
           "Invalid regular expression: '%s'. Line: %s." %
           (self.regex, self.line_num))
@@ -521,7 +564,7 @@ class TextFSMRule(object):
 
     # Check that an error message is present only with the 'Error' operator.
     if self.line_op != 'Error' and self.new_state:
-      if not re.match(r'\w+', self.new_state):
+      if not regexModule.match(r'\w+', self.new_state):
         raise TextFSMTemplateError(
             'Alphanumeric characters only in state names. Line: %s.'
             % (self.line_num))
@@ -560,8 +603,8 @@ class TextFSM(object):
   """
   # Variable and State name length.
   MAX_NAME_LEN = 48
-  comment_regex = re.compile(r'^\s*#')
-  state_name_re = re.compile(r'^(\w+)$')
+  comment_regex = regexModule.compile(r'^\s*#')
+  state_name_re = regexModule.compile(r'^(\w+)$')
   _DEFAULT_OPTIONS = TextFSMOptions
 
   def __init__(self, template, options_class=_DEFAULT_OPTIONS):
@@ -668,7 +711,7 @@ class TextFSM(object):
     self._ClearRecord()
 
   def _Parse(self, template):
-    """Parses template file for FSM structure.
+    """Parses template file for FSM structuregex.
 
     Args:
       template: Valid template file.
@@ -940,8 +983,13 @@ class TextFSM(object):
     for rule in self._cur_state:
       matched = self._CheckRule(rule, line)
       if matched:
-        for value in matched.groupdict():
-          self._AssignVar(matched, value)
+        if useRegex is True:
+          for value in matched.capturesdict():
+            self._AssignVar(matched, value)
+        else:
+          # workaround to fallback on re module if regex not imported
+          for value in matched.groupdict():
+            self._AssignVar(matched, value)
 
         if self._Operations(rule, line):
           # Not a Continue so check for state transition.
@@ -977,7 +1025,10 @@ class TextFSM(object):
     """
     _value = self._GetValue(value)
     if _value is not None:
-      _value.AssignVar(matched.group(value))
+      if useRegex:
+        _value.AssignVar(matched.captures(value))
+      else:
+        _value.AssignVar([matched.group(value)])
 
   def _Operations(self, rule, line):
     """Operators on the data record.

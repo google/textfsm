@@ -16,8 +16,11 @@
 
 """Work around a regression in Python 2.6 that makes RegexObjects uncopyable."""
 
+try:
+  import regex as regexModule
+except ImportError:
+  import re as regexModule
 
-import re
 from builtins import object    # pylint: disable=redefined-builtin
 
 
@@ -26,7 +29,7 @@ class CopyableRegexObject(object):
 
   def __init__(self, pattern):
     self.pattern = pattern
-    self.regex = re.compile(pattern)
+    self.regex = regexModule.compile(pattern)
 
   def match(self, *args, **kwargs):
     return self.regex.match(*args, **kwargs)

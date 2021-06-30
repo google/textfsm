@@ -1,0 +1,12 @@
+Value normaldata1 (\S+)
+Value normaldata2 (\S+)
+Value normaldata3 (\S+)
+Value normaldata4 (\S+)
+Value Repeated keything (\S+)
+Value Repeated valuedata (\S+)
+Value Repeated unusedRepeated (\S+)
+Value List unused (\S+)
+
+
+Start
+  ^${normaldata1}\s+${normaldata2} (${keything}:${valuedata},? )*${normaldata3}\s+${normaldata4} -> Record

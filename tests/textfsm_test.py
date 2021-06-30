@@ -24,10 +24,13 @@ from __future__ import unicode_literals
 from builtins import str
 import unittest
 from io import StringIO
-
-
-
 import textfsm
+from textfsm.parser import TextFSMTemplateError
+try:
+  import regex as regexModule
+  useRegex = True
+except ImportError:
+  useRegex = False
 
 
 class UnitTestFSM(unittest.TestCase):
@@ -802,7 +805,7 @@ class UnitTestFSM(unittest.TestCase):
 
   def testInvalidRegexp(self):
 
-    tplt = 'Value boo (.$*)\n\nStart\n  ^$boo -> Next\n'
+    tplt = 'Value boo ([(\S+]))\n\nStart\n  ^$boo -> Next\n'
     self.assertRaises(textfsm.TextFSMTemplateError,
                       textfsm.TextFSM, StringIO(tplt))
 
@@ -909,6 +912,123 @@ State1
     f = StringIO(buf)
     t = textfsm.TextFSM(f)
     self.assertEqual(str(t), buf_result)
+
+  def testRepeated(self):
+    """Repeated option should work ok."""
+    tplt = """Value Repeated repeatedKey (\S+)
+Value Repeated repeatedValue (\S+)
+Value normalData (\S+)
+Value normalData2 (\S+)
+Value Repeated repeatedUnused (\S+)
+
+Start
+  ^${normalData} (${repeatedKey}:${repeatedValue} )*${normalData2} -> Record"""
+
+    data = """
+normal1 key1:value1 key2:value2 key3:value3 normal2 \n
+normal1 normal2 """
+
+    t = textfsm.TextFSM(StringIO(tplt))
+    if useRegex is True:
+      result = t.ParseText(data)
+      self.assertListEqual(
+        [[['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'normal1', 'normal2', []],
+         [[], [], 'normal1', 'normal2', []]],
+        result)
+    else:
+      # test proper failure when falling back on re module
+      with self.assertRaises(TextFSMTemplateError,
+                             msg="Expected a ModuleNotFoundError when using keyword 'Repeated' without 'regex' module"):
+        result = t.ParseText(data)
+
+  def testRepeatedList(self):
+    """Keywords Repeated and List should work together"""
+    tplt = """Value List,Repeated repeatedKey (\S+)
+Value Repeated,List repeatedValue (\S+)
+Value Repeated,List repeatedUnused (\S+)
+
+Start
+  ^(${repeatedKey}:${repeatedValue} )+
+  ^record -> Record"""
+
+    data = """
+key1:value1 key2:value2 key3:value3 \n
+key4:value4 key5:value5 key6:value6 \n
+record"""
+
+    t = textfsm.TextFSM(StringIO(tplt))
+    if useRegex is True:
+      result = t.ParseText(data)
+    else:
+      return
+
+    self.assertListEqual([[[['key1', 'key2', 'key3'], ['key4', 'key5', 'key6']], [['value1', 'value2', 'value3'],
+                      ['value4', 'value5', 'value6']], []]],
+                     result
+                     )
+
+  def testRepeatedFilldown(self):
+    """Keywords Repeated and Filldown should work together"""
+    tplt = """Value Filldown,Repeated repeatedKey (\S+)
+Value Repeated,Filldown repeatedValue (\S+)
+Value Required otherMatch (\S+)
+
+Start
+  ^record -> Record
+  ^(${repeatedKey}:${repeatedValue} )+
+  ^${otherMatch}
+  """
+
+    data = """
+key1:value1 key2:value2 key3:value3 \n
+key4:value4 key5:value5 key6:value6 \n
+foo \n
+bar \n
+record \n
+foobar \n
+record"""
+
+    t = textfsm.TextFSM(StringIO(tplt))
+    if useRegex is True:
+      result = t.ParseText(data)
+    else:
+      return
+
+    self.assertListEqual([[['key4', 'key5', 'key6'], ['value4', 'value5', 'value6'], 'bar'], [['key4', 'key5', 'key6'],
+                     ['value4', 'value5', 'value6'], 'foobar']],
+                     result
+                     )
+
+  def testRepeatedFillup(self):
+    """Keywords Repeated and Fillup should work together"""
+    tplt = """Value Fillup,Repeated repeatedKey (\S+)
+Value Repeated,Fillup repeatedValue (\S+)
+Value Required otherMatch (\S+)
+
+Start
+  ^record -> Record
+  ^(${repeatedKey}:${repeatedValue} )+
+  ^${otherMatch}
+  """
+
+    data = """
+foo \n
+bar \n
+record \n
+foobar \n
+key1:value1 key2:value2 key3:value3 \n
+record"""
+
+    t = textfsm.TextFSM(StringIO(tplt))
+    if useRegex is True:
+      result = t.ParseText(data)
+    else:
+      return
+
+    self.assertListEqual([[['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'bar'],
+                     [['key1', 'key2', 'key3'], ['value1', 'value2', 'value3'], 'foobar']],
+                     result
+                     )
 
 
 if __name__ == '__main__':
