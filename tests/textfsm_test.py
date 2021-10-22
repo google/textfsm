@@ -70,6 +70,18 @@ class UnitTestFSM(unittest.TestCase):
                       v.Parse,
                       'Value beer (boo)hoo)')
 
+    # Escaped parentheses don't count.
+    v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
+    v.Parse(r'Value beer (boo\)hoo)')
+    self.assertEqual(v.name, 'beer')
+    self.assertEqual(v.regex, r'(boo\)hoo)')
+    self.assertRaises(textfsm.TextFSMTemplateError,
+                      v.Parse,
+                      r'Value beer (boohoo\)')
+    self.assertRaises(textfsm.TextFSMTemplateError,
+                      v.Parse,
+                      r'Value beer (boo)hoo\)')
+
     # Unbalanced parenthesis can exist if within square "[]" braces.
     v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
     v.Parse('Value beer (boo[(]hoo)')
