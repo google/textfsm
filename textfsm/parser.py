@@ -313,22 +313,20 @@ class TextFSMValue(object):
       raise TextFSMTemplateError(
           "Invalid Value name '%s' or name too long." % self.name)
 
-    square_brackets = r'[^\]?\[[^]]*\]'
-    regex_without_brackets = re.sub(square_brackets, '', self.regex)
-    if (not re.match(r'^\(.*\)$', self.regex) or
-        regex_without_brackets.count('(') != regex_without_brackets.count(')')):
+    if self.regex[0]!='(' or self.regex[-1]!=')' or self.regex[-2]=='\\':
       raise TextFSMTemplateError(
           "Value '%s' must be contained within a '()' pair." % self.regex)
+    try:
+      compiled_regex = re.compile(self.regex)
+    except re.error as e:
+      raise TextFSMTemplateError(str(e))
 
     self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
 
     # Compile and store the regex object only on List-type values for use in
     # nested matching
     if any([isinstance(x, TextFSMOptions.List) for x in self.options]):
-      try:
-        self.compiled_regex = re.compile(self.regex)
-      except re.error as e:
-        raise TextFSMTemplateError(str(e))
+      self.compiled_regex = compiled_regex
 
   def _AddOption(self, name):
     """Add an option to this Value.
