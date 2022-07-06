@@ -17,7 +17,6 @@
 """Setup script."""
 
 from setuptools import setup, find_packages
-import textfsm
 # To use a consistent encoding
 from codecs import open
 from os import path
@@ -31,7 +30,6 @@ with open(path.join(here, 'README.md'), encoding="utf8") as f:
 setup(name='textfsm',
       maintainer='Google',
       maintainer_email='textfsm-dev@googlegroups.com',
-      version=textfsm.__version__,
       description='Python module for parsing semi-structured text into python tables.',
       long_description=long_description,
       long_description_content_type='text/markdown',
