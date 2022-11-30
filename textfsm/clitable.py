@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2012 Google Inc. All Rights Reserved.
+# Copyright 2022 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-"""GCLI Table - CLI data in TextTable format.
+"""TCLI Table - CLI data in TextTable format.
 
 Class that reads CLI output and parses into tabular format.
 
@@ -46,7 +46,7 @@ class Error(Exception):
 
 
 class IndexTableError(Error):
-  """General INdexTable error."""
+  """General IndexTable error."""
 
 
 class CliTableError(Error):
