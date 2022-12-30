@@ -40,6 +40,10 @@ from builtins import str      # pylint: disable=redefined-builtin
 from builtins import zip      # pylint: disable=redefined-builtin
 import six
 
+from debugger import MatchedPair
+from debugger import LineHistory
+from debugger import VisualDebugger
+
 
 class Error(Exception):
   """Base class for errors."""
@@ -577,6 +581,10 @@ class TextFSM(object):
     self._cur_state = None
     # Name of the current state.
     self._cur_state_name = None
+    # Visual debug mode flag
+    self.visual_debug = False
+    # Keep track of parse history when in debug mode.
+    self.parse_history = []
 
     # Read and parse FSM definition.
     # Restore the file pointer once done.
@@ -935,9 +943,16 @@ class TextFSM(object):
     Args:
       line: A string, the current input line.
     """
+    line_history = None
+    if self.visual_debug:
+      line_history = LineHistory(line, self._cur_state_name, [], [])
+
     for rule in self._cur_state:
       matched = self._CheckRule(rule, line)
       if matched:
+        if self.visual_debug and line_history:
+          line_history.matches.append(MatchedPair(matched, rule))
+
         for value in matched.groupdict():
           self._AssignVar(matched, value)
 
@@ -948,6 +963,9 @@ class TextFSM(object):
               self._cur_state = self.states[rule.new_state]
             self._cur_state_name = rule.new_state
           break
+
+    if self.visual_debug and line_history:
+      self.parse_history.append(line_history)
 
   def _CheckRule(self, rule, line):
     """Check a line against the given rule.
@@ -1060,7 +1078,7 @@ def main(argv=None):
     argv = sys.argv
 
   try:
-    opts, args = getopt.getopt(argv[1:], 'h', ['help'])
+    opts, args = getopt.getopt(argv[1:], 'h', ['help', 'visual-debug'])
   except getopt.error as msg:
     raise Usage(msg)
 
@@ -1085,7 +1103,17 @@ def main(argv=None):
       with open(args[1], 'r') as f:
         cli_input = f.read()
 
+      for opt, _ in opts:
+        if opt == '--visual-debug':
+          print("visual debug mode, open 'debug.html' for template behaviour when parsing the CLI text.")
+          fsm.visual_debug = True
+
       table = fsm.ParseText(cli_input)
+
+      if fsm.visual_debug:
+        debugger = VisualDebugger(fsm, cli_input)
+        debugger.build_debug_html()
+
       print('FSM Table:')
       result = str(fsm.header) + '\n'
       for line in table:
@@ -1106,7 +1134,7 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-  help_msg = '%s [--help] template [input_file [output_file]]\n' % sys.argv[0]
+  help_msg = '%s [--help] [--visual-debug] template [input_file [output_file]]\n' % sys.argv[0]
   try:
     sys.exit(main())
   except Usage as err:
