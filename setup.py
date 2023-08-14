@@ -53,5 +53,5 @@ setup(name='textfsm',
       },      
       include_package_data=True,
       package_data={'textfsm': ['../testdata/*']},
-      install_requires=['six', 'future'],
+      install_requires=['six'],
      )
