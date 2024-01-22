@@ -17,26 +17,20 @@
 
 """Simple terminal related routines."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-try:
-  # Import fails on Windows machines.
-  import fcntl
-  import termios
-  import tty
-except (ImportError, ModuleNotFoundError):
-  pass
 import getopt
 import os
 import re
 import struct
 import sys
 import time
-from builtins import object   # pylint: disable=redefined-builtin
-from builtins import str      # pylint: disable=redefined-builtin
+
+try:
+  # Import fails on Windows machines.
+  import fcntl  # pylint: disable=g-import-not-at-top
+  import termios  # pylint: disable=g-import-not-at-top
+  import tty  # pylint: disable=g-import-not-at-top
+except (ImportError, ModuleNotFoundError):
+  pass
 
 __version__ = '0.1.1'
 
@@ -68,34 +62,38 @@ SGR = {
     'bg_cyan': 46,
     'bg_white': 47,
     'bg_reset': 49,
-    }
+}
 
 # Provide a familar descriptive word for some ansi sequences.
-FG_COLOR_WORDS = {'black': ['black'],
-                  'dark_gray': ['bold', 'black'],
-                  'blue': ['blue'],
-                  'light_blue': ['bold', 'blue'],
-                  'green': ['green'],
-                  'light_green': ['bold', 'green'],
-                  'cyan': ['cyan'],
-                  'light_cyan': ['bold', 'cyan'],
-                  'red': ['red'],
-                  'light_red': ['bold', 'red'],
-                  'purple': ['magenta'],
-                  'light_purple': ['bold', 'magenta'],
-                  'brown': ['yellow'],
-                  'yellow': ['bold', 'yellow'],
-                  'light_gray': ['white'],
-                  'white': ['bold', 'white']}
+FG_COLOR_WORDS = {
+    'black': ['black'],
+    'dark_gray': ['bold', 'black'],
+    'blue': ['blue'],
+    'light_blue': ['bold', 'blue'],
+    'green': ['green'],
+    'light_green': ['bold', 'green'],
+    'cyan': ['cyan'],
+    'light_cyan': ['bold', 'cyan'],
+    'red': ['red'],
+    'light_red': ['bold', 'red'],
+    'purple': ['magenta'],
+    'light_purple': ['bold', 'magenta'],
+    'brown': ['yellow'],
+    'yellow': ['bold', 'yellow'],
+    'light_gray': ['white'],
+    'white': ['bold', 'white'],
+}
 
-BG_COLOR_WORDS = {'black': ['bg_black'],
-                  'red': ['bg_red'],
-                  'green': ['bg_green'],
-                  'yellow': ['bg_yellow'],
-                  'dark_blue': ['bg_blue'],
-                  'purple': ['bg_magenta'],
-                  'light_blue': ['bg_cyan'],
-                  'grey': ['bg_white']}
+BG_COLOR_WORDS = {
+    'black': ['bg_black'],
+    'red': ['bg_red'],
+    'green': ['bg_green'],
+    'yellow': ['bg_yellow'],
+    'dark_blue': ['bg_blue'],
+    'purple': ['bg_magenta'],
+    'light_blue': ['bg_cyan'],
+    'grey': ['bg_white'],
+}
 
 
 # Characters inserted at the start and end of ANSI strings
@@ -104,15 +102,14 @@ ANSI_START = '\001'
 ANSI_END = '\002'
 
 
-sgr_re = re.compile(r'(%s?\033\[\d+(?:;\d+)*m%s?)' % (
-    ANSI_START, ANSI_END))
+sgr_re = re.compile(r'(%s?\033\[\d+(?:;\d+)*m%s?)' % (ANSI_START, ANSI_END))
 
 
 class Error(Exception):
   """The base error class."""
 
 
-class Usage(Error):
+class UsageError(Error):
   """Command line format error."""
 
 
@@ -120,8 +117,8 @@ def _AnsiCmd(command_list):
   """Takes a list of SGR values and formats them as an ANSI escape sequence.
 
   Args:
-    command_list: List of strings, each string represents an SGR value.
-        e.g. 'fg_blue', 'bg_yellow'
+    command_list: List of strings, each string represents an SGR value. e.g.
+      'fg_blue', 'bg_yellow'
 
   Returns:
     The ANSI escape sequence.
@@ -139,7 +136,7 @@ def _AnsiCmd(command_list):
   # Convert to numerical strings.
   command_str = [str(SGR[x.lower()]) for x in command_list]
   # Wrap values in Ansi escape sequence (CSI prefix & SGR suffix).
-  return '\033[%sm' % (';'.join(command_str))
+  return '\033[%sm' % ';'.join(command_str)
 
 
 def AnsiText(text, command_list=None, reset=True):
@@ -147,8 +144,8 @@ def AnsiText(text, command_list=None, reset=True):
 
   Args:
     text: String to encase in sgr escape sequence.
-    command_list: List of strings, each string represents an sgr value.
-      e.g. 'fg_blue', 'bg_yellow'
+    command_list: List of strings, each string represents an sgr value. e.g.
+      'fg_blue', 'bg_yellow'
     reset: Boolean, if to add a reset sequence to the suffix of the text.
 
   Returns:
@@ -176,11 +173,11 @@ def TerminalSize():
   try:
     with open(os.ctermid()) as tty_instance:
       length_width = struct.unpack(
-          'hh', fcntl.ioctl(tty_instance.fileno(), termios.TIOCGWINSZ, '1234'))
+          'hh', fcntl.ioctl(tty_instance.fileno(), termios.TIOCGWINSZ, '1234')
+      )
   except (IOError, OSError, NameError):
     try:
-      length_width = (int(os.environ['LINES']),
-                      int(os.environ['COLUMNS']))
+      length_width = (int(os.environ['LINES']), int(os.environ['COLUMNS']))
     except (ValueError, KeyError):
       length_width = (24, 80)
   return length_width
@@ -202,27 +199,27 @@ def LineWrap(text, omit_sgr=False):
     token_list = sgr_re.split(text_line)
     text_line_list = []
     line_length = 0
-    for (index, token) in enumerate(token_list):
+    for index, token in enumerate(token_list):
       # Skip null tokens.
-      if token == '':
+      if not token:
         continue
 
       if sgr_re.match(token):
         # Add sgr escape sequences without splitting or counting length.
         text_line_list.append(token)
-        text_line = ''.join(token_list[index +1:])
+        text_line = ''.join(token_list[index + 1 :])
       else:
         if line_length + len(token) <= width:
           # Token fits in line and we count it towards overall length.
           text_line_list.append(token)
           line_length += len(token)
-          text_line = ''.join(token_list[index +1:])
+          text_line = ''.join(token_list[index + 1 :])
         else:
           # Line splits part way through this token.
           # So split the token, form a new line and carry the remainder.
-          text_line_list.append(token[:width - line_length])
-          text_line = token[width - line_length:]
-          text_line += ''.join(token_list[index +1:])
+          text_line_list.append(token[: width - line_length])
+          text_line = token[width - line_length :]
+          text_line += ''.join(token_list[index + 1 :])
           break
 
     return (''.join(text_line_list), text_line)
@@ -234,8 +231,9 @@ def LineWrap(text, omit_sgr=False):
   text_multiline = []
   for text_line in text.splitlines():
     # Is this a line that needs splitting?
-    while ((omit_sgr and (len(StripAnsiText(text_line)) > width)) or
-           (len(text_line) > width)):
+    while (omit_sgr and (len(StripAnsiText(text_line)) > width)) or (
+        len(text_line) > width
+    ):
       # If there are no sgr escape characters then do a straight split.
       if not omit_sgr:
         text_multiline.append(text_line[:width])
@@ -285,8 +283,8 @@ class Pager(object):
 
     Args:
       text: A string, the text that will be paged through.
-      delay: A boolean, if True will cause a slight delay
-        between line printing for more obvious scrolling.
+      delay: A boolean, if True will cause a slight delay between line printing
+        for more obvious scrolling.
     """
     self._text = text or ''
     self._delay = delay
@@ -357,7 +355,9 @@ class Pager(object):
     text = LineWrap(self._text).splitlines()
     while True:
       # Get a list of new lines to display.
-      self._newlines = text[self._displayed:self._displayed+self._lines_to_show]
+      self._newlines = text[
+          self._displayed : self._displayed + self._lines_to_show
+      ]
       for line in self._newlines:
         sys.stdout.write(line + '\n')
         if self._delay and self._lastscroll > 0:
@@ -367,19 +367,19 @@ class Pager(object):
       if self._currentpagelines >= self._lines_to_show:
         self._currentpagelines = 0
         wish = self._AskUser()
-        if wish == 'q':         # Quit pager.
+        if wish == 'q':  # Quit pager.
           return False
-        elif wish == 'g':       # Display till the end.
+        elif wish == 'g':  # Display till the end.
           self._Scroll(len(text) - self._displayed + 1)
-        elif wish == '\r':      #  Enter, down a line.
+        elif wish == '\r':  #  Enter, down a line.
           self._Scroll(1)
         elif wish == '\033[B':  # Down arrow, down a line.
           self._Scroll(1)
         elif wish == '\033[A':  # Up arrow, up a line.
           self._Scroll(-1)
-        elif wish == 'b':       # Up a page.
+        elif wish == 'b':  # Up a page.
           self._Scroll(0 - self._cli_lines)
-        else:                   # Next page.
+        else:  # Next page.
           self._Scroll()
       if self._displayed >= len(text):
         break
@@ -390,8 +390,8 @@ class Pager(object):
     """Set attributes to scroll the buffer correctly.
 
     Args:
-      lines: An int, number of lines to scroll. If None, scrolls
-        by the terminal length.
+      lines: An int, number of lines to scroll. If None, scrolls by the terminal
+        length.
     """
     if lines is None:
       lines = self._cli_lines
@@ -414,18 +414,19 @@ class Pager(object):
       A string, the character entered by the user.
     """
     if self._show_percent:
-      progress = int(self._displayed*100 / (len(self._text.splitlines())))
+      progress = int(self._displayed * 100 / (len(self._text.splitlines())))
       progress_text = ' (%d%%)' % progress
     else:
       progress_text = ''
     question = AnsiText(
-        'Enter: next line, Space: next page, '
-        'b: prev page, q: quit.%s' %
-        progress_text, ['green'])
+        'Enter: next line, Space: next page, b: prev page, q: quit.%s'
+        % progress_text,
+        ['green'],
+    )
     sys.stdout.write(question)
     sys.stdout.flush()
     ch = self._GetCh()
-    sys.stdout.write('\r%s\r' % (' '*len(question)))
+    sys.stdout.write('\r%s\r' % (' ' * len(question)))
     sys.stdout.flush()
     return ch
 
@@ -456,8 +457,8 @@ def main(argv=None):
 
   try:
     opts, args = getopt.getopt(argv[1:], 'dhs', ['nodelay', 'help', 'size'])
-  except getopt.error as msg:
-    raise Usage(msg)
+  except getopt.error as exc:
+    raise UsageError(exc) from exc
 
   # Print usage and return, regardless of presence of other args.
   for opt, _ in opts:
@@ -476,7 +477,7 @@ def main(argv=None):
     elif opt in ('-d', '--delay'):
       isdelay = True
     else:
-      raise Usage('Invalid arguments.')
+      raise UsageError('Invalid arguments.')
 
   # Page text supplied in either specified file or stdin.
 
@@ -492,7 +493,7 @@ if __name__ == '__main__':
   help_msg = '%s [--help] [--size] [--nodelay] [input_file]\n' % sys.argv[0]
   try:
     sys.exit(main())
-  except Usage as err:
+  except UsageError as err:
     print(err, file=sys.stderr)
     print('For help use --help', file=sys.stderr)
     sys.exit(2)

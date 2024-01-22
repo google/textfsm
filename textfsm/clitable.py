@@ -24,20 +24,12 @@ output combinations and store the data in a TextTable.
 Is the glue between an automated command scraping program (such as RANCID) and
 the TextFSM output parser.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import copy
 import os
 import re
 import threading
-from builtins import object    # pylint: disable=redefined-builtin
-from builtins import str       # pylint: disable=redefined-builtin
 import textfsm
-
-from textfsm import copyable_regex_object
 from textfsm import texttable
 
 
@@ -49,7 +41,7 @@ class IndexTableError(Error):
   """General IndexTable error."""
 
 
-class CliTableError(Error):
+class CliTableError(Error):  # pylint: disable=g-bad-exception-name
   """General CliTable error."""
 
 
@@ -140,7 +132,7 @@ class IndexTable(object):
         if precompile:
           row[col] = precompile(col, row[col])
         if row[col]:
-          row[col] = copyable_regex_object.CopyableRegexObject(row[col])
+          row[col] = re.compile(row[col])
 
   def GetRowMatch(self, attributes):
     """Returns the row number that matches the supplied attributes."""
@@ -149,8 +141,11 @@ class IndexTable(object):
         for key in attributes:
           # Silently skip attributes not present in the index file.
           # pylint: disable=E1103
-          if (key in row.header and row[key] and
-              not row[key].match(attributes[key])):
+          if (
+              key in row.header
+              and row[key]
+              and not row[key].match(attributes[key])
+          ):
             # This line does not match, so break and try next row.
             raise StopIteration()
         return row.row
@@ -185,11 +180,12 @@ class CliTable(texttable.TextTable):
 
     # pylint: disable=E0213
     def Wrapper(main_obj, *args, **kwargs):
-      main_obj._lock.acquire()                  # pylint: disable=W0212
+      main_obj._lock.acquire()  # pylint: disable=W0212
       try:
         return func(main_obj, *args, **kwargs)  # pylint: disable=E1102
       finally:
-        main_obj._lock.release()                # pylint: disable=W0212
+        main_obj._lock.release()  # pylint: disable=W0212
+
     return Wrapper
 
   @synchronised
@@ -228,7 +224,7 @@ class CliTable(texttable.TextTable):
       self.index = self.INDEX[fullpath]
 
     # Does the IndexTable have the right columns.
-    if 'Template' not in self.index.index.header:    # pylint: disable=E1103
+    if 'Template' not in self.index.index.header:  # pylint: disable=E1103
       raise CliTableError("Index file does not have 'Template' column.")
 
   def _TemplateNamesToFiles(self, template_str):
@@ -238,8 +234,7 @@ class CliTable(texttable.TextTable):
     template_files = []
     try:
       for tmplt in template_list:
-        template_files.append(
-            open(os.path.join(self.template_dir, tmplt), 'r'))
+        template_files.append(open(os.path.join(self.template_dir, tmplt), 'r'))
     except:
       for tmplt in template_files:
         tmplt.close()
@@ -270,8 +265,9 @@ class CliTable(texttable.TextTable):
       if row_idx:
         templates = self.index.index[row_idx]['Template']
       else:
-        raise CliTableError('No template found for attributes: "%s"' %
-                            attributes)
+        raise CliTableError(
+            'No template found for attributes: "%s"' % attributes
+        )
 
     template_files = self._TemplateNamesToFiles(templates)
 
@@ -283,8 +279,9 @@ class CliTable(texttable.TextTable):
 
       # Add additional columns from any additional tables.
       for tmplt in template_files[1:]:
-        self.extend(self._ParseCmdItem(self.raw, template_file=tmplt),
-                    set(self._keys))
+        self.extend(
+            self._ParseCmdItem(self.raw, template_file=tmplt), set(self._keys)
+        )
     finally:
       for f in template_files:
         f.close()
@@ -358,6 +355,7 @@ class CliTable(texttable.TextTable):
     if not key and self._keys:
       key = self.KeyValue
     super(CliTable, self).sort(cmp=cmp, key=key, reverse=reverse)
+
   # pylint: enable=W0622
 
   def AddKeys(self, key_list):

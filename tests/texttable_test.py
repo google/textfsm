@@ -16,14 +16,8 @@
 
 """Unittest for text table."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from builtins import range
+import io
 import unittest
-from io import StringIO
 from textfsm import terminal
 from textfsm import texttable
 
@@ -84,8 +78,8 @@ class UnitTestRow(unittest.TestCase):
     self.assertEqual(3, len(row))
 
     # Contains.
-    self.assertTrue('two' not in row)
-    self.assertTrue('Two' in row)
+    self.assertNotIn('two', row)
+    self.assertIn('Two', row)
 
     # Iteration.
     self.assertEqual(['one', 'Two', 'three'], list(row))
@@ -253,8 +247,8 @@ class UnitTestTextTable(unittest.TestCase):
 
   def testContains(self):
     t = self.BasicTable()
-    self.assertTrue('a' in t)
-    self.assertFalse('x' in t)
+    self.assertIn('a', t)
+    self.assertNotIn('x', t)
 
   def testIteration(self):
     t = self.BasicTable()
@@ -271,6 +265,7 @@ class UnitTestTextTable(unittest.TestCase):
 
     # Can we iterate repeatedly.
     index = 0
+    index2 = 0
     for r in t:
       index += 1
       self.assertEqual(r, t[index])
@@ -312,7 +307,7 @@ a,b, c, d  # Trim comment
 10, 11
 # More comments.
 """
-    f = StringIO(buf)
+    f = io.StringIO(buf)
     t = texttable.TextTable()
     self.assertEqual(2, t.CsvToTable(f))
     # pylint: disable=E1101
@@ -514,7 +509,7 @@ a,b, c, d  # Trim comment
         3, t._SmallestColSize('bbb ' + terminal.AnsiText('bb', ['red'])))
 
   def testFormattedTableColor(self):
-    # Test to sepcify the color defined in terminal.FG_COLOR_WORDS
+    # Test to specify the color defined in terminal.FG_COLOR_WORDS
     t = texttable.TextTable()
     t.header = ('LSP', 'Name')
     t.Append(('col1', 'col2'))

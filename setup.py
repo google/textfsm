@@ -16,42 +16,40 @@
 
 """Setup script."""
 
-from setuptools import setup, find_packages
-import textfsm
 # To use a consistent encoding
 from codecs import open
 from os import path
+from setuptools import find_packages, setup
+import textfsm
 
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding="utf8") as f:
-    long_description = f.read()
+with open(path.join(here, 'README.md'), encoding='utf8') as f:
+  long_description = f.read()
 
-setup(name='textfsm',
-      maintainer='Google',
-      maintainer_email='textfsm-dev@googlegroups.com',
-      version=textfsm.__version__,
-      description='Python module for parsing semi-structured text into python tables.',
-      long_description=long_description,
-      long_description_content_type='text/markdown',
-      url='https://github.com/google/textfsm',
-      license='Apache License, Version 2.0',
-      classifiers=[
-          'Development Status :: 5 - Production/Stable',
-          'Intended Audience :: Developers',
-          'License :: OSI Approved :: Apache Software License',
-          'Operating System :: OS Independent',
-          'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 3',
-          'Topic :: Software Development :: Libraries'],
-      packages=['textfsm'],
-      entry_points={
-        'console_scripts': [
-            'textfsm=textfsm.parser:main'
-        ]
-      },      
-      include_package_data=True,
-      package_data={'textfsm': ['../testdata/*']},
-      install_requires=['six', 'future'],
-     )
+setup(
+    name='textfsm',
+    maintainer='Google',
+    maintainer_email='textfsm-dev@googlegroups.com',
+    version=textfsm.__version__,
+    description=(
+        'Python module for parsing semi-structured text into python tables.'
+    ),
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    url='https://github.com/google/textfsm',
+    license='Apache License, Version 2.0',
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 3',
+        'Topic :: Software Development :: Libraries',
+    ],
+    packages=['textfsm'],
+    entry_points={'console_scripts': ['textfsm=textfsm.parser:main']},
+    include_package_data=True,
+    package_data={'textfsm': ['../testdata/*']},
+)

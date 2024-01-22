@@ -23,21 +23,9 @@ Tables can be created from CSV input and in-turn supports a number of display
 formats such as CSV and variable sized and justified rows.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import copy
-from functools import cmp_to_key
+import functools
 import textwrap
-
-from builtins import next      # pylint: disable=redefined-builtin
-from builtins import object    # pylint: disable=redefined-builtin
-from builtins import range     # pylint: disable=redefined-builtin
-from builtins import str       # pylint: disable=redefined-builtin
-from builtins import zip       # pylint: disable=redefined-builtin
-import six
 
 from textfsm import terminal
 
@@ -57,8 +45,11 @@ class Row(dict):
   to make it behave like a regular dict() and list().
 
   Attributes:
+    color: Colour spec of this row.
+    header: List of row's headers.
     row: int, the row number in the container table. 0 is the header row.
     table: A TextTable(), the associated container table.
+    values: List of row's values.
   """
 
   def __init__(self, *args, **kwargs):
@@ -163,7 +154,7 @@ class Row(dict):
     except IndexError:
       return default_value
 
-  def index(self, column):
+  def index(self, column):  # pylint: disable=invalid-name
     """Fetches the column number (0 indexed).
 
     Args:
@@ -175,12 +166,12 @@ class Row(dict):
     Raises:
       ValueError: The specified column was not found.
     """
-    for i, key in enumerate(self._keys):
-      if key == column:
-        return i
-    raise ValueError('Column "%s" not found.' % column)
+    try:
+      return self._keys.index(column)
+    except ValueError as exc:
+      raise ValueError('Column "%s" not found.' % column) from exc
 
-  def iterkeys(self):
+  def iterkeys(self):  # pylint: disable=invalid-name
     return iter(self._keys)
 
   def items(self):
@@ -264,12 +255,13 @@ class Row(dict):
     elif isinstance(values, list) or isinstance(values, tuple):
       if len(values) != len(self._values):
         raise TypeError('Supplied list length != row length')
-      for (index, value) in enumerate(values):
+      for index, value in enumerate(values):
         self._values[index] = _ToStr(value)
 
     else:
-      raise TypeError('Supplied argument must be Row, dict or list, not %s',
-                      type(values))
+      raise TypeError(
+          'Supplied argument must be Row, dict or list, not %s' % type(values)
+      )
 
   def Insert(self, key, value, row_index):
     """Inserts new values at a specified offset.
@@ -318,8 +310,8 @@ class TextTable(object):
     """Initialises a new table.
 
     Args:
-      row_class: A class to use as the row object. This should be a
-        subclass of this module's Row() class.
+      row_class: A class to use as the row object. This should be a subclass of
+        this module's Row() class.
     """
     self.row_class = row_class
     self.separator = ', '
@@ -328,7 +320,7 @@ class TextTable(object):
   def Reset(self):
     self._row_index = 1
     self._table = [[]]
-    self._iterator = 0      # While loop row index
+    self._iterator = 0  # While loop row index
 
   def __repr__(self):
     return '%s(%r)' % (self.__class__.__name__, str(self))
@@ -338,7 +330,7 @@ class TextTable(object):
     return self.table
 
   def __incr__(self, incr=1):
-    self._SetRowIndex(self._row_index +incr)
+    self._SetRowIndex(self._row_index + incr)
 
   def __contains__(self, name):
     """Whether the given column header name exists."""
@@ -387,9 +379,9 @@ class TextTable(object):
     """Construct Textable from the rows of which the function returns true.
 
     Args:
-      function: A function applied to each row which returns a bool. If
-                function is None, all rows with empty column values are
-                removed.
+      function: A function applied to each row which returns a bool. If function
+        is None, all rows with empty column values are removed.
+
     Returns:
       A new TextTable()
 
@@ -404,7 +396,7 @@ class TextTable(object):
     # pylint: disable=protected-access
     new_table._table = [self.header]
     for row in self:
-      if function(row) is True:
+      if function(row):
         new_table.Append(row)
     return new_table
 
@@ -431,6 +423,7 @@ class TextTable(object):
     return new_table
 
   # pylint: disable=W0622
+  # pylint: disable=invalid-name
   def sort(self, cmp=None, key=None, reverse=False):
     """Sorts rows in the texttable.
 
@@ -456,7 +449,7 @@ class TextTable(object):
     new_table = self._table[1:]
 
     if cmp is not None:
-      key = cmp_to_key(cmp)
+      key = functools.cmp_to_key(cmp)
 
     new_table.sort(key=key, reverse=reverse)
 
@@ -466,17 +459,19 @@ class TextTable(object):
     # Re-write the 'row' attribute of each row
     for index, row in enumerate(self._table):
       row.row = index
-  # pylint: enable=W0622
 
-  def extend(self, table, keys=None):
+  # pylint: enable=W0622
+  # pylint: enable=invalid-name
+
+  def extend(self, table, keys=None):  # pylint: disable=invalid-name
     """Extends all rows in the texttable.
 
     The rows are extended with the new columns from the table.
 
     Args:
       table: A texttable, the table to extend this table by.
-      keys: A set, the set of columns to use as the key. If None, the
-        row index is used.
+      keys: A set, the set of columns to use as the key. If None, the row index
+        is used.
 
     Raises:
       IndexError: If key is not a valid column name.
@@ -484,7 +479,7 @@ class TextTable(object):
     if keys:
       for k in keys:
         if k not in self._Header():
-          raise IndexError("Unknown key: '%s'", k)
+          raise IndexError("Unknown key: '%s'" % k)
 
     extend_with = []
     for column in table.header:
@@ -517,8 +512,8 @@ class TextTable(object):
     """Removes a row from the table.
 
     Args:
-      row: int, the row number to delete. Must be >= 1, as the header
-        cannot be removed.
+      row: int, the row number to delete. Must be >= 1, as the header cannot be
+        removed.
 
     Raises:
       TableError: Attempt to remove nonexistent or header row.
@@ -608,9 +603,7 @@ class TextTable(object):
     # Avoid the global lookup cost on each iteration.
     lstr = str
     for row in self._table:
-      result.append(
-          '%s\n' %
-          self.separator.join(lstr(v) for v in row))
+      result.append('%s\n' % self.separator.join(lstr(v) for v in row))
 
     return ''.join(result)
 
@@ -619,7 +612,7 @@ class TextTable(object):
     if not isinstance(table, TextTable):
       raise TypeError('Not an instance of TextTable.')
     self.Reset()
-    self._table = copy.deepcopy(table._table)   # pylint: disable=W0212
+    self._table = copy.deepcopy(table._table)  # pylint: disable=W0212
     # Point parent table of each row back ourselves.
     for row in self:
       row.table = self
@@ -667,15 +660,16 @@ class TextTable(object):
         result.extend(self._TextJustify(paragraph, col_size))
       return result
 
-    wrapper = textwrap.TextWrapper(width=col_size-2, break_long_words=False,
-                                   expand_tabs=False)
+    wrapper = textwrap.TextWrapper(
+        width=col_size - 2, break_long_words=False, expand_tabs=False
+    )
     try:
       text_list = wrapper.wrap(text)
-    except ValueError:
-      raise TableError('Field too small (minimum width: 3)')
+    except ValueError as exc:
+      raise TableError('Field too small (minimum width: 3)') from exc
 
     if not text_list:
-      return [' '*col_size]
+      return [' ' * col_size]
 
     for current_line in text_list:
       stripped_len = len(terminal.StripAnsiText(current_line))
@@ -688,16 +682,23 @@ class TextTable(object):
 
     return result
 
-  def FormattedTable(self, width=80, force_display=False, ml_delimiter=True,
-                     color=True, display_header=True, columns=None):
+  def FormattedTable(
+      self,
+      width=80,
+      force_display=False,
+      ml_delimiter=True,
+      color=True,
+      display_header=True,
+      columns=None,
+  ):
     """Returns whole table, with whitespace padding and row delimiters.
 
     Args:
       width: An int, the max width we want the table to fit in.
       force_display: A bool, if set to True will display table when the table
-          can't be made to fit to the width.
+        can't be made to fit to the width.
       ml_delimiter: A bool, if set to False will not display the multi-line
-          delimiter.
+        delimiter.
       color: A bool. If true, display any colours in row.colour.
       display_header: A bool. If true, display header.
       columns: A list of str, show only columns with these names.
@@ -781,8 +782,9 @@ class TextTable(object):
         for key in multi_word:
           # If we scale past the desired width for this particular column,
           # then give it its desired width and remove it from the wrapped list.
-          if (largest[key] <=
-              round((largest[key] / float(desired_width)) * spare_width)):
+          if largest[key] <= round(
+              (largest[key] / float(desired_width)) * spare_width
+          ):
             smallest[key] = largest[key]
             multi_word.remove(key)
             spare_width -= smallest[key]
@@ -790,8 +792,9 @@ class TextTable(object):
             done = False
           # If we scale below the minimum width for this particular column,
           # then leave it at its minimum and remove it from the wrapped list.
-          elif (smallest[key] >=
-                round((largest[key] / float(desired_width)) * spare_width)):
+          elif smallest[key] >= round(
+              (largest[key] / float(desired_width)) * spare_width
+          ):
             multi_word.remove(key)
             spare_width -= smallest[key]
             desired_width -= largest[key]
@@ -800,8 +803,9 @@ class TextTable(object):
       # Repeat the scaling algorithm with the final wrap list.
       # This time we assign the extra column space by increasing 'smallest'.
       for key in multi_word:
-        smallest[key] = int(round((largest[key] / float(desired_width))
-                                  * spare_width))
+        smallest[key] = int(
+            round((largest[key] / float(desired_width)) * spare_width)
+        )
 
     total_width = 0
     row_count = 0
@@ -823,7 +827,7 @@ class TextTable(object):
           header_list.append(result_dict[key][row_idx])
         except IndexError:
           # If no value than use whitespace of equal size.
-          header_list.append(' '*smallest[key])
+          header_list.append(' ' * smallest[key])
       header_list.append('\n')
 
     # Format and store the body lines
@@ -850,7 +854,7 @@ class TextTable(object):
         prev_muli_line = True
       # If current or prior line was multi-line then include delimiter.
       if not first_line and prev_muli_line and ml_delimiter:
-        body_list.append('-'*total_width + '\n')
+        body_list.append('-' * total_width + '\n')
         if row_count == 1:
           # Our current line was not wrapped, so clear flag.
           prev_muli_line = False
@@ -862,20 +866,20 @@ class TextTable(object):
             row_list.append(result_dict[key][row_idx])
           except IndexError:
             # If no value than use whitespace of equal size.
-            row_list.append(' '*smallest[key])
+            row_list.append(' ' * smallest[key])
         row_list.append('\n')
 
       if color and row.color is not None:
         body_list.append(
-            terminal.AnsiText(''.join(row_list)[:-1],
-                              command_list=row.color))
+            terminal.AnsiText(''.join(row_list)[:-1], command_list=row.color)
+        )
         body_list.append('\n')
       else:
         body_list.append(''.join(row_list))
 
       first_line = False
 
-    header = ''.join(header_list) + '='*total_width
+    header = ''.join(header_list) + '=' * total_width
     if color and self._Header().color is not None:
       header = terminal.AnsiText(header, command_list=self._Header().color)
     # Add double line delimiter between header and main body.
@@ -916,7 +920,7 @@ class TextTable(object):
 
     body = []
     for row in self:
-    # Some of the row values are pulled into the label, stored in label_prefix.
+      # Some row values are pulled into the label, stored in label_prefix.
       label_prefix = []
       value_list = []
       for key, value in row.items():
@@ -926,8 +930,9 @@ class TextTable(object):
         else:
           value_list.append('%s %s' % (key, value))
 
-      body.append(''.join(
-          ['%s.%s\n' % ('.'.join(label_prefix), v) for v in value_list]))
+      body.append(
+          ''.join(['%s.%s\n' % ('.'.join(label_prefix), v) for v in value_list])
+      )
 
     return '%s%s' % (label_str, ''.join(body))
 
@@ -965,7 +970,6 @@ class TextTable(object):
 
     Raises:
       TableError: Column name already exists.
-
     """
     if column in self.table:
       raise TableError('Column %r already in table.' % column)
@@ -1028,11 +1032,12 @@ class TextTable(object):
     self.Reset()
 
     header_row = self.row_class()
+    header_length = 0
     if header:
       line = buf.readline()
       header_str = ''
       while not header_str:
-        if not isinstance(line, six.string_types):
+        if not isinstance(line, str):
           line = line.decode('utf-8')
         # Remove comments.
         header_str = line.split('#')[0].strip()
@@ -1053,7 +1058,7 @@ class TextTable(object):
 
     # xreadlines would be better but not supported by StringIO for testing.
     for line in buf:
-      if not isinstance(line, six.string_types):
+      if not isinstance(line, str):
         line = line.decode('utf-8')
       # Support commented lines, provide '#' is first character of line.
       if line.startswith('#'):
@@ -1067,8 +1072,9 @@ class TextTable(object):
       if not header:
         header_row = self.row_class()
         header_length = len(lst)
-        header_row.values = dict(zip(range(header_length),
-                                     range(header_length)))
+        header_row.values = dict(
+            zip(range(header_length), range(header_length))
+        )
         self._table[0] = header_row
         header = True
         continue
@@ -1080,7 +1086,7 @@ class TextTable(object):
 
     return self.size
 
-  def index(self, name=None):
+  def index(self, name=None):  # pylint: disable=invalid-name
     """Returns index number of supplied column name.
 
     Args:
@@ -1094,5 +1100,5 @@ class TextTable(object):
     """
     try:
       return self.header.index(name)
-    except ValueError:
-      raise TableError('Unknown index name %s.' % name)
+    except ValueError as exc:
+      raise TableError('Unknown index name %s.' % name) from exc
