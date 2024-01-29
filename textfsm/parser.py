@@ -24,28 +24,19 @@ A simple template language is used to describe a state machine to
 parse a specific type of text input, returning a record of values
 for each input entity.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 
 import getopt
 import inspect
 import re
 import string
 import sys
-from builtins import object   # pylint: disable=redefined-builtin
-from builtins import str      # pylint: disable=redefined-builtin
-from builtins import zip      # pylint: disable=redefined-builtin
-import six
 
 
 class Error(Exception):
   """Base class for errors."""
 
 
-class Usage(Exception):
+class UsageError(Exception):
   """Error in command line execution."""
 
 
@@ -59,15 +50,15 @@ class TextFSMTemplateError(Error):
 
 # The below exceptions are internal state change triggers
 # and not used as Errors.
-class FSMAction(Exception):
+class FSMAction(Exception):  # pylint: disable=g-bad-exception-name
   """Base class for actions raised with the FSM."""
 
 
-class SkipRecord(FSMAction):
+class SkipRecord(FSMAction):  # pylint: disable=g-bad-exception-name
   """Indicate a record is to be skipped."""
 
 
-class SkipValue(FSMAction):
+class SkipValue(FSMAction):  # pylint: disable=g-bad-exception-name
   """Indicate a value is to be skipped."""
 
 
@@ -176,8 +167,8 @@ class TextFSMOptions(object):
     """Value constitutes part of the Key of the record."""
 
   class List(OptionBase):
-    r"""
-    Value takes the form of a list.
+    # pylint: disable=g-space-before-docstring-summary
+    r"""Value takes the form of a list.
 
     If the value regex contains nested match groups in the form (?P<name>regex),
     instead of adding a string to the list, we add a dictionary of the groups.
@@ -238,6 +229,7 @@ class TextFSMValue(object):
     fsm: A TextFSMBase(), the containing FSM.
     value: (str), the current value.
   """
+
   # The class which contains valid options.
 
   def __init__(self, fsm=None, max_name_len=48, options_class=None):
@@ -286,7 +278,6 @@ class TextFSMValue(object):
 
     Raises:
       TextFSMTemplateError: Value declaration contains an error.
-
     """
 
     value_line = value.split(' ')
@@ -311,15 +302,17 @@ class TextFSMValue(object):
 
     if len(self.name) > self.max_name_len:
       raise TextFSMTemplateError(
-          "Invalid Value name '%s' or name too long." % self.name)
+          "Invalid Value name '%s' or name too long." % self.name
+      )
 
-    if self.regex[0]!='(' or self.regex[-1]!=')' or self.regex[-2]=='\\':
+    if self.regex[0] != '(' or self.regex[-1] != ')' or self.regex[-2] == '\\':
       raise TextFSMTemplateError(
-          "Value '%s' must be contained within a '()' pair." % self.regex)
+          "Value '%s' must be contained within a '()' pair." % self.regex
+      )
     try:
       compiled_regex = re.compile(self.regex)
-    except re.error as e:
-      raise TextFSMTemplateError(str(e))
+    except re.error as exc:
+      raise TextFSMTemplateError(str(exc)) from exc
 
     self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
 
@@ -346,8 +339,8 @@ class TextFSMValue(object):
     # Create the option object
     try:
       option = self._options_cls.GetOption(name)(self)
-    except AttributeError:
-      raise TextFSMTemplateError('Unknown option "%s"' % name)
+    except AttributeError as exc:
+      raise TextFSMTemplateError('Unknown option "%s"' % name) from exc
 
     self.options.append(option)
 
@@ -362,7 +355,8 @@ class TextFSMValue(object):
       return 'Value %s %s %s' % (
           ','.join(self.OptionNames()),
           self.name,
-          self.regex)
+          self.regex,
+      )
     else:
       return 'Value %s %s' % (self.name, self.regex)
 
@@ -374,10 +368,10 @@ class CopyableRegexObject(object):
     self.pattern = pattern
     self.regex = re.compile(pattern)
 
-  def match(self, *args, **kwargs):
+  def match(self, *args, **kwargs):  # pylint: disable=invalid-name
     return self.regex.match(*args, **kwargs)
 
-  def sub(self, *args, **kwargs):
+  def sub(self, *args, **kwargs):  # pylint: disable=invalid-name
     return self.regex.sub(*args, **kwargs)
 
   def __copy__(self):
@@ -408,6 +402,7 @@ class TextFSMRule(object):
     regex_obj: Compiled regex for which the rule matches.
     line_num: Integer row number of Value.
   """
+
   # Implicit default is '(regexp) -> Next.NoRecord'
   MATCH_ACTION = re.compile(r'(?P<match>.*)(\s->(?P<action>.*))')
 
@@ -445,15 +440,16 @@ class TextFSMRule(object):
     self.match = ''
     self.regex = ''
     self.regex_obj = None
-    self.line_op = ''              # Equivalent to 'Next'.
-    self.record_op = ''            # Equivalent to 'NoRecord'.
-    self.new_state = ''            # Equivalent to current state.
+    self.line_op = ''  # Equivalent to 'Next'.
+    self.record_op = ''  # Equivalent to 'NoRecord'.
+    self.new_state = ''  # Equivalent to current state.
     self.line_num = line_num
 
     line = line.strip()
     if not line:
-      raise TextFSMTemplateError('Null data in FSMRule. Line: %s'
-                                 % self.line_num)
+      raise TextFSMTemplateError(
+          'Null data in FSMRule. Line: %s' % self.line_num
+      )
 
     # Is there '->' action present.
     match_action = self.MATCH_ACTION.match(line)
@@ -467,18 +463,20 @@ class TextFSMRule(object):
     if var_map:
       try:
         self.regex = string.Template(self.match).substitute(var_map)
-      except (ValueError, KeyError):
+      except (ValueError, KeyError) as exc:
         raise TextFSMTemplateError(
-            "Duplicate or invalid variable substitution: '%s'. Line: %s." %
-            (self.match, self.line_num))
+            "Duplicate or invalid variable substitution: '%s'. Line: %s."
+            % (self.match, self.line_num)
+        ) from exc
 
     try:
       # Work around a regression in Python 2.6 that makes RE Objects uncopyable.
       self.regex_obj = CopyableRegexObject(self.regex)
-    except re.error:
+    except re.error as exc:
       raise TextFSMTemplateError(
-          "Invalid regular expression: '%s'. Line: %s." %
-          (self.regex, self.line_num))
+          "Invalid regular expression: '%s'. Line: %s."
+          % (self.regex, self.line_num)
+      ) from exc
 
     # No '->' present, so done.
     if not match_action:
@@ -494,8 +492,9 @@ class TextFSMRule(object):
         action_re = self.ACTION3_RE.match(match_action.group('action'))
         if not action_re:
           # Last attempt, match an optional new state only.
-          raise TextFSMTemplateError("Badly formatted rule '%s'. Line: %s." %
-                                     (line, self.line_num))
+          raise TextFSMTemplateError(
+              "Badly formatted rule '%s'. Line: %s." % (line, self.line_num)
+          )
 
     # We have an Line operator.
     if 'ln_op' in action_re.groupdict() and action_re.group('ln_op'):
@@ -515,14 +514,16 @@ class TextFSMRule(object):
     if self.line_op == 'Continue' and self.new_state:
       raise TextFSMTemplateError(
           "Action '%s' with new state %s specified. Line: %s."
-          % (self.line_op, self.new_state, self.line_num))
+          % (self.line_op, self.new_state, self.line_num)
+      )
 
     # Check that an error message is present only with the 'Error' operator.
     if self.line_op != 'Error' and self.new_state:
       if not re.match(r'\w+', self.new_state):
         raise TextFSMTemplateError(
             'Alphanumeric characters only in state names. Line: %s.'
-            % (self.line_num))
+            % (self.line_num)
+        )
 
   def __str__(self):
     """Prints out the FSM Rule, mimic the input file."""
@@ -556,6 +557,7 @@ class TextFSM(object):
     header: Ordered list of values.
     state_list: Ordered list of valid states.
   """
+
   # Variable and State name length.
   MAX_NAME_LEN = 48
   comment_regex = re.compile(r'^\s*#')
@@ -710,7 +712,7 @@ class TextFSM(object):
       # Blank line signifies end of Value definitions.
       if not line:
         return
-      if not isinstance(line, six.string_types):
+      if not isinstance(line, str):
         line = line.decode('utf-8')
       # Skip commented lines.
       if self.comment_regex.match(line):
@@ -719,21 +721,28 @@ class TextFSM(object):
       if line.startswith('Value '):
         try:
           value = TextFSMValue(
-              fsm=self, max_name_len=self.MAX_NAME_LEN,
-              options_class=self._options_cls)
+              fsm=self,
+              max_name_len=self.MAX_NAME_LEN,
+              options_class=self._options_cls,
+          )
           value.Parse(line)
-        except TextFSMTemplateError as error:
-          raise TextFSMTemplateError('%s Line %s.' % (error, self._line_num))
+        except TextFSMTemplateError as exc:
+          raise TextFSMTemplateError(
+              '%s Line %s.' % (exc, self._line_num)
+          ) from exc
 
         if value.name in self.header:
           raise TextFSMTemplateError(
               "Duplicate declarations for Value '%s'. Line: %s."
-              % (value.name, self._line_num))
+              % (value.name, self._line_num)
+          )
 
         try:
           self._ValidateOptions(value)
-        except TextFSMTemplateError as error:
-          raise TextFSMTemplateError('%s Line %s.' % (error, self._line_num))
+        except TextFSMTemplateError as exc:
+          raise TextFSMTemplateError(
+              '%s Line %s.' % (exc, self._line_num)
+          ) from exc
 
         self.values.append(value)
         self.value_map[value.name] = value.template
@@ -743,7 +752,8 @@ class TextFSM(object):
       else:
         raise TextFSMTemplateError(
             'Expected blank line after last Value entry. Line: %s.'
-            % (self._line_num))
+            % (self._line_num)
+        )
 
   def _ValidateOptions(self, value):
     """Checks that combination of Options is valid."""
@@ -761,8 +771,8 @@ class TextFSM(object):
     not clash with reserved names and are unique.
 
     Args:
-      template: Valid template file after Value definitions
-      have already been read.
+      template: Valid template file after Value definitions have already been
+        read.
 
     Returns:
       Name of the state parsed from file. None otherwise.
@@ -779,22 +789,26 @@ class TextFSM(object):
     for line in template:
       self._line_num += 1
       line = line.rstrip()
-      if not isinstance(line, six.string_types):
+      if not isinstance(line, str):
         line = line.decode('utf-8')
       # First line is state definition
       if line and not self.comment_regex.match(line):
-         # Ensure statename has valid syntax and is not a reserved word.
-        if (not self.state_name_re.match(line) or
-            len(line) > self.MAX_NAME_LEN or
-            line in TextFSMRule.LINE_OP or
-            line in TextFSMRule.RECORD_OP):
-          raise TextFSMTemplateError("Invalid state name: '%s'. Line: %s"
-                                     % (line, self._line_num))
+        # Ensure statename has valid syntax and is not a reserved word.
+        if (
+            not self.state_name_re.match(line)
+            or len(line) > self.MAX_NAME_LEN
+            or line in TextFSMRule.LINE_OP
+            or line in TextFSMRule.RECORD_OP
+        ):
+          raise TextFSMTemplateError(
+              "Invalid state name: '%s'. Line: %s" % (line, self._line_num)
+          )
 
         state_name = line
         if state_name in self.states:
-          raise TextFSMTemplateError("Duplicate state name: '%s'. Line: %s"
-                                     % (line, self._line_num))
+          raise TextFSMTemplateError(
+              "Duplicate state name: '%s'. Line: %s" % (line, self._line_num)
+          )
         self.states[state_name] = []
         self.state_list.append(state_name)
         break
@@ -807,7 +821,7 @@ class TextFSM(object):
       # Finish rules processing on blank line.
       if not line:
         break
-      if not isinstance(line, six.string_types):
+      if not isinstance(line, str):
         line = line.decode('utf-8')
       if self.comment_regex.match(line):
         continue
@@ -815,11 +829,13 @@ class TextFSM(object):
       # A rule within a state, starts with 1 or 2 spaces, or a tab.
       if not line.startswith((' ^', '  ^', '\t^')):
         raise TextFSMTemplateError(
-            "Missing white space or carat ('^') before rule. Line: %s" %
-            self._line_num)
+            "Missing white space or carat ('^') before rule. Line: %s"
+            % self._line_num
+        )
 
       self.states[state_name].append(
-          TextFSMRule(line, self._line_num, self.value_map))
+          TextFSMRule(line, self._line_num, self.value_map)
+      )
 
     return state_name
 
@@ -865,8 +881,9 @@ class TextFSM(object):
 
         if rule.new_state not in self.states:
           raise TextFSMTemplateError(
-              "State '%s' not found, referenced in state '%s'" %
-              (rule.new_state, state))
+              "State '%s' not found, referenced in state '%s'"
+              % (rule.new_state, state)
+          )
 
     return True
 
@@ -878,7 +895,7 @@ class TextFSM(object):
     Args:
       text: (str), Text to parse with embedded newlines.
       eof: (boolean), Set to False if we are parsing only part of the file.
-            Suppresses triggering EOF state.
+        Suppresses triggering EOF state.
 
     Raises:
       TextFSMError: An error occurred within the FSM.
@@ -903,7 +920,7 @@ class TextFSM(object):
 
     return self._result
 
-  def ParseTextToDicts(self, *args, **kwargs):
+  def ParseTextToDicts(self, text, eof=True):
     """Calls ParseText and turns the result into list of dicts.
 
     List items are dicts of rows, dict key is column header and value is column
@@ -912,7 +929,7 @@ class TextFSM(object):
     Args:
       text: (str), Text to parse with embedded newlines.
       eof: (boolean), Set to False if we are parsing only part of the file.
-            Suppresses triggering EOF state.
+        Suppresses triggering EOF state.
 
     Raises:
       TextFSMError: An error occurred within the FSM.
@@ -921,7 +938,7 @@ class TextFSM(object):
       List of dicts.
     """
 
-    result_lists = self.ParseText(*args, **kwargs)
+    result_lists = self.ParseText(text, eof)
     result_dicts = []
 
     for row in result_lists:
@@ -973,9 +990,9 @@ class TextFSM(object):
       matched: (regexp.match) Named group for each matched value.
       value: (str) The matched value.
     """
-    _value = self._GetValue(value)
-    if _value is not None:
-      _value.AssignVar(matched.group(value))
+    self._value = self._GetValue(value)
+    if self._value is not None:
+      self._value.AssignVar(matched.group(value))
 
   def _Operations(self, rule, line):
     """Operators on the data record.
@@ -1018,11 +1035,15 @@ class TextFSM(object):
     # Lastly process line operators.
     if rule.line_op == 'Error':
       if rule.new_state:
-        raise TextFSMError('Error: %s. Rule Line: %s. Input Line: %s.'
-                           % (rule.new_state, rule.line_num, line))
+        raise TextFSMError(
+            'Error: %s. Rule Line: %s. Input Line: %s.'
+            % (rule.new_state, rule.line_num, line)
+        )
 
-      raise TextFSMError('State Error raised. Rule Line: %s. Input Line: %s'
-                         % (rule.line_num, line))
+      raise TextFSMError(
+          'State Error raised. Rule Line: %s. Input Line: %s'
+          % (rule.line_num, line)
+      )
 
     elif rule.line_op == 'Continue':
       # Continue with current line without returning to the start of the state.
@@ -1061,8 +1082,8 @@ def main(argv=None):
 
   try:
     opts, args = getopt.getopt(argv[1:], 'h', ['help'])
-  except getopt.error as msg:
-    raise Usage(msg)
+  except getopt.error as exc:
+    raise UsageError(exc) from exc
 
   for opt, _ in opts:
     if opt in ('-h', '--help'):
@@ -1071,10 +1092,11 @@ def main(argv=None):
       return 0
 
   if not args or len(args) > 4:
-    raise Usage('Invalid arguments.')
+    raise UsageError('Invalid arguments.')
 
   # If we have an argument, parse content of file and display as a template.
   # Template displayed will match input template, minus any comment lines.
+  result = ''
   with open(args[0], 'r') as template:
     fsm = TextFSM(template)
     print('FSM Template:\n%s\n' % fsm)
@@ -1109,7 +1131,7 @@ if __name__ == '__main__':
   help_msg = '%s [--help] template [input_file [output_file]]\n' % sys.argv[0]
   try:
     sys.exit(main())
-  except Usage as err:
+  except UsageError as err:
     print(err, file=sys.stderr)
     print('For help use --help', file=sys.stderr)
     sys.exit(2)

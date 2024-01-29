@@ -17,13 +17,6 @@
 
 """Unittest for terminal module."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from builtins import range
-from builtins import object
 import sys
 import unittest
 
@@ -39,6 +32,7 @@ class TerminalTest(unittest.TestCase):
     self.terminal_orig = terminal.TerminalSize
 
   def tearDown(self):
+    super(TerminalTest, self).tearDown()
     terminal.os.environ = self.environ_orig
     terminal.os.open = self.open_orig
     terminal.TerminalSize = self.terminal_orig
@@ -157,6 +151,7 @@ class PagerTest(unittest.TestCase):
     self.p = terminal.Pager()
 
   def tearDown(self):
+    super(PagerTest, self).tearDown()
     terminal.Pager._GetCh = self.get_ch_orig
     terminal.TerminalSize = self.ts_orig
     sys.stdout = sys.__stdout__
@@ -180,7 +175,7 @@ class PagerTest(unittest.TestCase):
     sys.stdout.output = ''
     self.p = terminal.Pager()
     self.p._text = ''
-    for i in range(10):
+    for _ in range(10):
       self.p._text += 'a' * 100 + '\n'
     self.p.Page()
     self.assertEqual(20, sys.stdout.CountLines())
