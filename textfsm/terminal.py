@@ -20,7 +20,6 @@
 import getopt
 import os  # needed for testing
 import re
-
 import shutil
 import sys
 import time
@@ -183,7 +182,7 @@ def LineWrap(text, omit_sgr=False):
     Text with additional line wraps inserted for lines grater than the width.
   """
 
-  def _SplitWithSgr(text_line):
+  def _SplitWithSgr(text_line, width):
     """Tokenise the line so that the sgr sequences can be omitted."""
     token_list = sgr_re.split(text_line)
     text_line_list = []
@@ -215,20 +214,20 @@ def LineWrap(text, omit_sgr=False):
 
   # We don't use textwrap library here as it insists on removing
   # trailing/leading whitespace (pre 2.6).
-  (width, _) = TerminalSize()
+  (term_width, _) = TerminalSize()
   text = str(text)
   text_multiline = []
   for text_line in text.splitlines():
     # Is this a line that needs splitting?
-    while (omit_sgr and (len(StripAnsiText(text_line)) > width)) or (
-        len(text_line) > width
+    while (omit_sgr and (len(StripAnsiText(text_line)) > term_width)) or (
+        len(text_line) > term_width
     ):
       # If there are no sgr escape characters then do a straight split.
       if not omit_sgr:
-        text_multiline.append(text_line[:width])
-        text_line = text_line[width:]
+        text_multiline.append(text_line[:term_width])
+        text_line = text_line[term_width:]
       else:
-        (multiline_line, text_line) = _SplitWithSgr(text_line)
+        (multiline_line, text_line) = _SplitWithSgr(text_line, term_width)
         text_multiline.append(multiline_line)
     if text_line:
       text_multiline.append(text_line)

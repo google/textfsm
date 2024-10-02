@@ -153,7 +153,8 @@ class PagerTest(unittest.TestCase):
     sys.stdout = sys.__stdout__
 
   def testPager(self):
-    self.assertEqual(terminal.TerminalSize()[1], self.p._cli_lines)
+    (_, term_length) = terminal.TerminalSize()
+    self.assertEqual(term_length, self.p._cli_lines)
 
     self.p.Clear()
     self.assertEqual('', self.p._text)
@@ -166,7 +167,8 @@ class PagerTest(unittest.TestCase):
       txt += '%d a random line of text here\n' % i
     self.p._text = txt
     self.p.Page()
-    self.assertEqual(terminal.TerminalSize()[1]+2, sys.stdout.CountLines())
+    (_, term_length) = terminal.TerminalSize()
+    self.assertEqual(term_length+2, sys.stdout.CountLines())
 
     sys.stdout.output = ''
     self.p = terminal.Pager()
