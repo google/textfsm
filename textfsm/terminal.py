@@ -18,9 +18,10 @@
 """Simple terminal related routines."""
 
 import getopt
-import os
+import os  # needed for testing
 import re
-import struct
+
+import shutil
 import sys
 import time
 
@@ -31,8 +32,6 @@ try:
   import tty  # pylint: disable=g-import-not-at-top
 except (ImportError, ModuleNotFoundError):
   pass
-
-__version__ = '0.1.1'
 
 # ANSI, ISO/IEC 6429 escape sequences, SGR (Select Graphic Rendition) subset.
 SGR = {
@@ -169,18 +168,8 @@ def EncloseAnsiText(text):
 
 
 def TerminalSize():
-  """Returns terminal length and width as a tuple."""
-  try:
-    with open(os.ctermid()) as tty_instance:
-      length_width = struct.unpack(
-          'hh', fcntl.ioctl(tty_instance.fileno(), termios.TIOCGWINSZ, '1234')
-      )
-  except (IOError, OSError, NameError):
-    try:
-      length_width = (int(os.environ['LINES']), int(os.environ['COLUMNS']))
-    except (ValueError, KeyError):
-      length_width = (24, 80)
-  return length_width
+  """Returns terminal width and length as a tuple."""
+  return shutil.get_terminal_size(fallback=(80, 24))
 
 
 def LineWrap(text, omit_sgr=False):
@@ -226,7 +215,7 @@ def LineWrap(text, omit_sgr=False):
 
   # We don't use textwrap library here as it insists on removing
   # trailing/leading whitespace (pre 2.6).
-  (_, width) = TerminalSize()
+  (width, _) = TerminalSize()
   text = str(text)
   text_multiline = []
   for text_line in text.splitlines():
@@ -318,7 +307,7 @@ class Pager(object):
       ValueError, TypeError: Not a valid integer representation.
     """
 
-    (self._cli_lines, self._cli_cols) = TerminalSize()
+    (self._cli_cols, self._cli_lines) = TerminalSize()
 
     if lines:
       self._cli_lines = int(lines)
@@ -472,7 +461,7 @@ def main(argv=None):
     # Prints the size of the terminal and returns.
     # Mutually exclusive to the paging of text and overrides that behaviour.
     if opt in ('-s', '--size'):
-      print('Length: %d, Width: %d' % TerminalSize())
+      print('Width: %d, Length: %d' % TerminalSize())
       return 0
     elif opt in ('-d', '--delay'):
       isdelay = True
