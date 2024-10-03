@@ -18,7 +18,6 @@
 """Simple terminal related routines."""
 
 import getopt
-import os  # needed for testing
 import re
 import shutil
 import sys
@@ -166,11 +165,6 @@ def EncloseAnsiText(text):
   return sgr_re.sub(lambda x: ANSI_START + x.group(1) + ANSI_END, text)
 
 
-def TerminalSize():
-  """Returns terminal width and length as a tuple."""
-  return shutil.get_terminal_size(fallback=(80, 24))
-
-
 def LineWrap(text, omit_sgr=False):
   """Break line to fit screen width, factoring in ANSI/SGR escape sequences.
 
@@ -214,7 +208,7 @@ def LineWrap(text, omit_sgr=False):
 
   # We don't use textwrap library here as it insists on removing
   # trailing/leading whitespace (pre 2.6).
-  (term_width, _) = TerminalSize()
+  (term_width, _) = shutil.get_terminal_size()
   text = str(text)
   text_multiline = []
   for text_line in text.splitlines():
@@ -306,7 +300,7 @@ class Pager(object):
       ValueError, TypeError: Not a valid integer representation.
     """
 
-    (self._cli_cols, self._cli_lines) = TerminalSize()
+    (self._cli_cols, self._cli_lines) = shutil.get_terminal_size()
 
     if lines:
       self._cli_lines = int(lines)
@@ -460,7 +454,8 @@ def main(argv=None):
     # Prints the size of the terminal and returns.
     # Mutually exclusive to the paging of text and overrides that behaviour.
     if opt in ('-s', '--size'):
-      print('Width: %d, Length: %d' % TerminalSize())
+      print(
+        'Width: %d, Length: %d' % shutil.get_terminal_size())
       return 0
     elif opt in ('-d', '--delay'):
       isdelay = True
