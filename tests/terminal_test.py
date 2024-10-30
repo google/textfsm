@@ -27,15 +27,11 @@ class TerminalTest(unittest.TestCase):
 
   def setUp(self):
     super(TerminalTest, self).setUp()
-    self.environ_orig = terminal.os.environ
-    self.open_orig = terminal.os.open
-    self.terminal_orig = terminal.TerminalSize
+    self._get_terminal_size_orig = terminal.shutil.get_terminal_size
 
   def tearDown(self):
     super(TerminalTest, self).tearDown()
-    terminal.os.environ = self.environ_orig
-    terminal.os.open = self.open_orig
-    terminal.TerminalSize = self.terminal_orig
+    terminal.shutil.get_terminal_size = self._get_terminal_size_orig
 
   def testAnsiCmd(self):
     self.assertEqual('\033[0m', terminal._AnsiCmd(['reset']))
@@ -66,22 +62,8 @@ class TerminalTest(unittest.TestCase):
     ansi_enclosed = '\001\033[5;32;44m\002ansi\001\033[0m\002 length'
     self.assertEqual(ansi_enclosed, terminal.EncloseAnsiText(ansi_text))
 
-  def testTerminalSize(self):
-    # pylint: disable=unused-argument
-    def StubOpen(args, *kwargs):
-      raise IOError
-    terminal.open = StubOpen
-    terminal.os.environ = {}
-    # Raise exceptions on ioctl and environ and assign a default.
-    self.assertEqual((24, 80), terminal.TerminalSize())
-    terminal.os.environ = {'LINES': 'bogus', 'COLUMNS': 'bogus'}
-    self.assertEqual((24, 80), terminal.TerminalSize())
-    # Still raise exception on ioctl and use environ.
-    terminal.os.environ = {'LINES': '10', 'COLUMNS': '20'}
-    self.assertEqual((10, 20), terminal.TerminalSize())
-
   def testLineWrap(self):
-    terminal.TerminalSize = lambda: (5, 11)
+    terminal.shutil.get_terminal_size = lambda: (11, 5)
     text = ''
     self.assertEqual(text, terminal.LineWrap(text))
     text = 'one line'
@@ -145,19 +127,15 @@ class PagerTest(unittest.TestCase):
     sys.stdout = FakeTerminal()
     self.get_ch_orig = terminal.Pager._GetCh
     terminal.Pager._GetCh = lambda self: 'q'
-    self.ts_orig = terminal.TerminalSize
-    terminal.TerminalSize = lambda: (24, 80)
 
     self.p = terminal.Pager()
 
   def tearDown(self):
     super(PagerTest, self).tearDown()
     terminal.Pager._GetCh = self.get_ch_orig
-    terminal.TerminalSize = self.ts_orig
     sys.stdout = sys.__stdout__
 
   def testPager(self):
-    self.assertEqual(terminal.TerminalSize()[0], self.p._cli_lines)
 
     self.p.Clear()
     self.assertEqual('', self.p._text)
@@ -170,7 +148,7 @@ class PagerTest(unittest.TestCase):
       txt += '%d a random line of text here\n' % i
     self.p._text = txt
     self.p.Page()
-    self.assertEqual(terminal.TerminalSize()[0]+2, sys.stdout.CountLines())
+    self.assertEqual(self.p._cli_lines+2, sys.stdout.CountLines())
 
     sys.stdout.output = ''
     self.p = terminal.Pager()
