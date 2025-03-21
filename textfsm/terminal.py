@@ -18,9 +18,8 @@
 """Simple terminal related routines."""
 
 import getopt
-import os
 import re
-import struct
+import shutil
 import sys
 import time
 
@@ -31,8 +30,6 @@ try:
   import tty  # pylint: disable=g-import-not-at-top
 except (ImportError, ModuleNotFoundError):
   pass
-
-__version__ = '0.1.1'
 
 # ANSI, ISO/IEC 6429 escape sequences, SGR (Select Graphic Rendition) subset.
 SGR = {
@@ -168,21 +165,6 @@ def EncloseAnsiText(text):
   return sgr_re.sub(lambda x: ANSI_START + x.group(1) + ANSI_END, text)
 
 
-def TerminalSize():
-  """Returns terminal length and width as a tuple."""
-  try:
-    with open(os.ctermid()) as tty_instance:
-      length_width = struct.unpack(
-          'hh', fcntl.ioctl(tty_instance.fileno(), termios.TIOCGWINSZ, '1234')
-      )
-  except (IOError, OSError, NameError):
-    try:
-      length_width = (int(os.environ['LINES']), int(os.environ['COLUMNS']))
-    except (ValueError, KeyError):
-      length_width = (24, 80)
-  return length_width
-
-
 def LineWrap(text, omit_sgr=False):
   """Break line to fit screen width, factoring in ANSI/SGR escape sequences.
 
@@ -194,7 +176,7 @@ def LineWrap(text, omit_sgr=False):
     Text with additional line wraps inserted for lines grater than the width.
   """
 
-  def _SplitWithSgr(text_line):
+  def _SplitWithSgr(text_line, width):
     """Tokenise the line so that the sgr sequences can be omitted."""
     token_list = sgr_re.split(text_line)
     text_line_list = []
@@ -226,20 +208,20 @@ def LineWrap(text, omit_sgr=False):
 
   # We don't use textwrap library here as it insists on removing
   # trailing/leading whitespace (pre 2.6).
-  (_, width) = TerminalSize()
+  (term_width, _) = shutil.get_terminal_size()
   text = str(text)
   text_multiline = []
   for text_line in text.splitlines():
     # Is this a line that needs splitting?
-    while (omit_sgr and (len(StripAnsiText(text_line)) > width)) or (
-        len(text_line) > width
+    while (omit_sgr and (len(StripAnsiText(text_line)) > term_width)) or (
+        len(text_line) > term_width
     ):
       # If there are no sgr escape characters then do a straight split.
       if not omit_sgr:
-        text_multiline.append(text_line[:width])
-        text_line = text_line[width:]
+        text_multiline.append(text_line[:term_width])
+        text_line = text_line[term_width:]
       else:
-        (multiline_line, text_line) = _SplitWithSgr(text_line)
+        (multiline_line, text_line) = _SplitWithSgr(text_line, term_width)
         text_multiline.append(multiline_line)
     if text_line:
       text_multiline.append(text_line)
@@ -318,7 +300,7 @@ class Pager(object):
       ValueError, TypeError: Not a valid integer representation.
     """
 
-    (self._cli_lines, self._cli_cols) = TerminalSize()
+    (self._cli_cols, self._cli_lines) = shutil.get_terminal_size()
 
     if lines:
       self._cli_lines = int(lines)
@@ -472,7 +454,8 @@ def main(argv=None):
     # Prints the size of the terminal and returns.
     # Mutually exclusive to the paging of text and overrides that behaviour.
     if opt in ('-s', '--size'):
-      print('Length: %d, Width: %d' % TerminalSize())
+      print(
+        'Width: %d, Length: %d' % shutil.get_terminal_size())
       return 0
     elif opt in ('-d', '--delay'):
       isdelay = True
