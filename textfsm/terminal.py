@@ -97,6 +97,7 @@ DOWN_ARROW = '\033[B'
 # Navigational instructions for the user of the pager.
 PROMPT_QUESTION = 'n: next line, Space: next page, b: prev page, q: quit.'
 
+
 def _GetChar() -> str:
   """Read a single character from the tty.
 
@@ -113,23 +114,24 @@ try:
   import tty
 
   def _PosixGetChar() -> str:
+    """Read a single character from the tty."""
     try:
-      _tty = open('/dev/tty')
+      read_tty = open('/dev/tty')
     except IOError:
       # No TTY, revert to stdin
-      _tty = sys.stdin
-    fd = _tty.fileno()
+      read_tty = sys.stdin
+    fd = read_tty.fileno()
     old = termios.tcgetattr(fd)
     try:
       tty.setraw(fd)
-      ch = _tty.read(1)
+      ch = read_tty.read(1)
       # Also support arrow key shortcuts (escape + 2 chars)
       if ord(ch) == 27:
-        ch += _tty.read(2)
+        ch += read_tty.read(2)
     finally:
       termios.tcsetattr(fd, termios.TCSADRAIN, old)
       if '_tty' != sys.stdin:
-        _tty.close()
+        read_tty.close()
     return ch
   _GetChar = _PosixGetChar
 except (ImportError, ModuleNotFoundError):
@@ -332,27 +334,30 @@ class Pager(object):
     """Reset the pager to the top of the text."""
     self.first_line = 0
 
-  def SetLines(self, lines: int = 0) -> typing.Tuple[int, int]:
+  def SetLines(self, num_lines: int = 0) -> typing.Tuple[int, int]:
     """Set number of lines to display at a time.
 
     Args:
-      lines: An int, number of lines. If 0 use terminal dimensions.
+      num_lines: An int, number of lines. If 0 use terminal dimensions.
         Maximum number should be one less than full terminal height,
         to allow for a user prompt. 
 
     Raises:
       ValueError, TypeError: Not a valid integer representation.
+
+    Returns:
+      Tuple, the width and lines of the terminal.
     """
 
     # Get the terminal size.
-    (_cols, _lines) = shutil.get_terminal_size()
+    (cols, lines) = shutil.get_terminal_size()
     # If we want paging by other than a whole window height.
     # For a whole window height, we drop one line to leave room for prompting.
-    self._lines = int(lines) or _lines - 1
+    self._lines = int(num_lines) or lines - 1
     # Must be at least two rows, one row of output and one for the prompt.
     self._lines = max(2, self._lines)
     # Only number of rows is user configurable, we keep the terminal width.
-    self._cols = _cols
+    self._cols = cols
     return (self._cols, self._lines)
 
   def Clear(self) -> None:
@@ -372,25 +377,25 @@ class Pager(object):
     """
 
     # Break text on newlines. But also break on line wrap.
-    _text_list = LineWrap(self._text).splitlines()
-    _total_length = len(_text_list)
+    text_list = LineWrap(self._text).splitlines()
+    total_length = len(text_list)
 
     # Bound start and end to be within the text.
     start = max(0, start)
     # If open-ended, trim to be whole of text.
     if not length:
-      end = _total_length
+      end = total_length
     else:
-      end = min(start + length, _total_length)
+      end = min(start + length, total_length)
 
     # Clear the screen.
     self._WriteOut('\033[2J\033[H')
     for i in range(start, end):
-      print(_text_list[i])
+      print(text_list[i])
       if self._delay:
         time.sleep(self._delay)
 
-    return (end, end / len(_text_list) * 100, _total_length)
+    return (end, end / len(text_list) * 100, total_length)
 
   def _WriteOut(self, text: str) -> None:
     """Write text to stdout."""
@@ -416,19 +421,18 @@ class Pager(object):
     if more_text:
       self._text += more_text
 
-    _only_quit = False
+    only_quit = False
     # Display a page of output.
-    (_end, _percent, _total_length) = self._Display(
-      self.first_line, self._lines)
+    (end, percent, total_length) = self._Display(self.first_line, self._lines)
     # If less than a page to display, then 'quit' is only navigation option.
-    if _total_length < self._lines:
-      _only_quit = True
+    if total_length < self._lines:
+      only_quit = True
 
     # While there is more text to be displayed.
     while True:
       # If we are not reading streamed data then show % completion.
       if not more_text:
-        wish = self._PromptUser(' (%d%%)' % _percent)
+        wish = self._PromptUser(' (%d%%)' % percent)
       else:
         # If we are reading streamed data then show the prompt only.
         wish = self._PromptUser()
@@ -436,13 +440,13 @@ class Pager(object):
       if wish == 'q':           # Quit.
         break
 
-      if _only_quit:
+      if only_quit:
         # If we have less than a page of text, ignore navigational keys.
         continue
 
       if wish == 'g':           # Display the remaining content.
-        (_end, _percent, _total_length) = self._Display(_end)
-        self.first_line = _end - self._lines
+        (end, _, total_length) = self._Display(end)
+        self.first_line = end - self._lines
       elif wish == 'n':
         # Enter, down a line.
         self.first_line += 1
@@ -458,16 +462,16 @@ class Pager(object):
       else:
         # Down a page.
         self.first_line += self._lines
-      
+
       # Bound the first line to be within the text.
       self.first_line = max(0, self.first_line)
-      self.first_line = min(_total_length-self._lines, self.first_line)
+      self.first_line = min(total_length-self._lines, self.first_line)
       # Display a page of output.
-      (_end, _percent, _total_length) = self._Display(
+      (end, percent, total_length) = self._Display(
           self.first_line, self._lines)
 
     # Set first_line to the end, so when we next page we start from there.
-    self.first_line = _end
+    self.first_line = end
 
   def _Prompt(self, suffix='') -> str:
     question = PROMPT_QUESTION + suffix
@@ -483,6 +487,9 @@ class Pager(object):
   def _PromptUser(self, suffix='') -> str:
     """Prompt the user for the next action.
 
+    Args:
+      suffix: A string, to be appended to the prompt.
+
     Returns:
       A string, the character entered by the user.
     """
@@ -491,6 +498,7 @@ class Pager(object):
     ch = _GetChar()
     self._WriteOut(self._ClearPrompt())
     return ch
+
 
 def main(argv=None):
   """Routine to page text or determine window size via command line."""
@@ -510,16 +518,15 @@ def main(argv=None):
       print(help_msg)
       return 0
 
-  _is_delay = False
+  is_delay = False
   for opt, _ in opts:
     # Prints the size of the terminal and returns.
     # Mutually exclusive to the paging of text and overrides that behavior.
     if opt in ('-s', '--size'):
-      print(
-        'Width: %d, Length: %d' % shutil.get_terminal_size())
+      print('Width: %d, Length: %d' % shutil.get_terminal_size())
       return 0
     elif opt in ('-d', '--delay'):
-      _is_delay = True
+      is_delay = True
     else:
       raise UsageError('Invalid arguments.')
 
@@ -530,7 +537,7 @@ def main(argv=None):
       fd = f.read()
   else:
     fd = sys.stdin.read()
-  Pager(fd, delay=_is_delay).Page()
+  Pager(fd, delay=is_delay).Page()
 
 
 if __name__ == '__main__':

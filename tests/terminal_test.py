@@ -117,10 +117,10 @@ class FakeTerminal(object):
   # pylint: disable=C6409
   def CountLines(self):
     return len(self.output.splitlines())
-  
+
   def Show(self):
     return self.output
-  
+
   def Clear(self):
     self.output = ''
 
@@ -134,7 +134,7 @@ class PagerTest(unittest.TestCase):
     super(PagerTest, self).setUp()
     self._output = FakeTerminal()
     sys.stdout = self._output
-    self._GetChar_orig = terminal._GetChar
+    self._getchar_orig = terminal._GetChar
     # Quit the pager immediately after the first page.
     terminal._GetChar = lambda: 'q'
 
@@ -148,7 +148,7 @@ class PagerTest(unittest.TestCase):
 
   def tearDown(self):
     super(PagerTest, self).tearDown()
-    terminal._GetChar = self._GetChar_orig
+    terminal._GetChar = self._getchar_orig
     sys.stdout = sys.__stdout__
 
   def testDisplay(self):
@@ -172,29 +172,29 @@ class PagerTest(unittest.TestCase):
     self.assertEqual(self._output.Show(), '7\n8\n9\n')
 
   def testPageAddsText(self):
-    _extra_text = '10\n11\n'
-    self.p.Page(_extra_text)
-    self.assertEqual(self.p._text, self._sample_text + _extra_text)
+    extra_text = '10\n11\n'
+    self.p.Page(extra_text)
+    self.assertEqual(self.p._text, self._sample_text + extra_text)
 
   def testPage(self):
     self.p.SetLines(3)
     self.p.Page()
     self.assertEqual(
-      self._output.Show().splitlines()[:-self._prompt_lines], ['0', '1', '2'])
-  
+        self._output.Show().splitlines()[:-self._prompt_lines], ['0', '1', '2'])
+
   def testPrompt(self):
     self.p.SetLines(2)
     # After paging once the progress will be 20%.
     self.p.Page()
     self._output.Clear()
     self.assertEqual(self.p._Prompt(), terminal.AnsiText(
-      'n: next line, Space: next page, b: prev page, q: quit.',
-      ['green']))
+        'n: next line, Space: next page, b: prev page, q: quit.',
+        ['green']))
     # truncate width to 10 cols, prompt should be likewise truncated.
     self.p._cols = 10
     self.assertEqual(self.p._Prompt(),
                      terminal.AnsiText('n: next li', ['green']))
-    
+
   def testPagerClear(self):
     self.p.SetLines(2)
     self.p.Page()
@@ -210,34 +210,34 @@ class PagerTest(unittest.TestCase):
     self.p.SetLines(2)
     self.p.Page()
     self.assertEqual(terminal.StripAnsiText(
-      self._output.Show().splitlines()[-self._prompt_lines]),
-      terminal.PROMPT_QUESTION + ' (20%)')
+        self._output.Show().splitlines()[-self._prompt_lines]),
+                     terminal.PROMPT_QUESTION + ' (20%)')
     self.p.Page()
     self.assertEqual(terminal.StripAnsiText(
-      self._output.Show().splitlines()[-self._prompt_lines]),
-      terminal.PROMPT_QUESTION + ' (40%)')
+        self._output.Show().splitlines()[-self._prompt_lines]),
+                     terminal.PROMPT_QUESTION + ' (40%)')
     self.p.Page('10\n11\n')
     # 50%, rather than 60%, as the total size increased from 10 to 12.
     # But we don't show percent, as the source is streamed.
     self.assertEqual(terminal.StripAnsiText(
-      self._output.Show().splitlines()[-self._prompt_lines]),
-      terminal.PROMPT_QUESTION)
+        self._output.Show().splitlines()[-self._prompt_lines]),
+                     terminal.PROMPT_QUESTION)
     self.p.Page('12\n13\n14\n15')
     self.assertEqual(terminal.StripAnsiText(
-      self._output.Show().splitlines()[-self._prompt_lines]),
-      terminal.PROMPT_QUESTION)
+        self._output.Show().splitlines()[-self._prompt_lines]),
+                     terminal.PROMPT_QUESTION)
     self.p.Page()
     self.assertEqual(terminal.StripAnsiText(
-      self._output.Show().splitlines()[-self._prompt_lines]),
-      terminal.PROMPT_QUESTION + ' (%d%%)' % (10 / 16 * 100))
+        self._output.Show().splitlines()[-self._prompt_lines]),
+                     terminal.PROMPT_QUESTION + ' (%d%%)' % (10 / 16 * 100))
 
   def testBlankLines(self):
-    _buffer = 'First line.\n\nThird line.\n'
-    self.p = terminal.Pager(_buffer)
+    buffer = 'First line.\n\nThird line.\n'
+    self.p = terminal.Pager(buffer)
     self.p.SetLines(4)
     self.p.Page()
     self.assertEqual(self._output.Show().splitlines()[:-self._prompt_lines],
-      _buffer.splitlines())
+                     buffer.splitlines())
 
 
 if __name__ == '__main__':
