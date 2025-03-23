@@ -151,22 +151,22 @@ class PagerTest(unittest.TestCase):
 
   def testDisplay(self):
     # Display a couple of rows (20%).
-    self.assertEqual(self.p._Display(0, 2), 20.0)
+    self.assertEqual(self.p._Display(0, 2), (2, 20.0))
     self.assertEqual(self._output.Show(), '0\n1\n')
     self._output.Clear()
-    self.assertEqual(self.p._Display(3, 5), 50.0)
+    self.assertEqual(self.p._Display(3, 2), (5, 50.0))
     self.assertEqual(self._output.Show(), '3\n4\n')
     self._output.Clear()
     # Display past the end of the text.
-    self.assertEqual(self.p._Display(8, 11), 100.0)
+    self.assertEqual(self.p._Display(8, 3), (10, 100.0))
     self.assertEqual(self._output.Show(), '8\n9\n')
     self._output.Clear()
-    # Display before the start.
-    self.assertEqual(self.p._Display(-1, 1), 10.0)
-    self.assertEqual(self._output.Show(), '0\n')
+    # Display before the start. Displays form the start.
+    self.assertEqual(self.p._Display(-1, 2), (2, 20.0))
+    self.assertEqual(self._output.Show(), '0\n1\n')
     self._output.Clear()
     # Display the rest of the text.
-    self.assertEqual(self.p._Display(7), 100.0)
+    self.assertEqual(self.p._Display(7), (10, 100.0))
     self.assertEqual(self._output.Show(), '7\n8\n9\n')
 
   def testPageAddsText(self):
@@ -187,12 +187,12 @@ class PagerTest(unittest.TestCase):
     self._output.Clear()
     # Confirm that prompt is at 20%
     self.assertEqual(self.p._Prompt(), terminal.AnsiText(
-      'Enter: next line, Space: next page, b: prev page, q: quit. (20%)',
+      'n: next line, Space: next page, b: prev page, q: quit. (20%)',
       ['green']))
     # truncate width to 10 cols, prompt should be likewise truncated.
     self.p._cols = 10
     self.assertEqual(self.p._Prompt(),
-                     terminal.AnsiText('Enter: nex', ['green']))
+                     terminal.AnsiText('n: next li', ['green']))
     
   def testPagerClear(self):
     self.p.SetLines(2)

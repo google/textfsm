@@ -357,9 +357,9 @@ class Pager(object):
 
     Args:
       start: An int, the first line to display.
-      end: An int, the last line to display.
+      length: An int, the number of lines to display.
     Returns:
-      An int, the percentage of the text displayed so far.
+      Tuple, the next line after, and a percentage for where that line is.
     """
 
     # Break text on newlines. But also break on line wrap.
@@ -378,7 +378,6 @@ class Pager(object):
       if self._delay:
         time.sleep(self._delay)
 
-    # Returns exactly '100' percent once all lines are displayed.
     return (end, end / len(_text_list) * 100)
 
   def _WriteOut(self, text: str) -> None:
@@ -395,10 +394,10 @@ class Pager(object):
     the user, or the user quits the pager.
 
     Args:
-      more_text: A string, extra text to be paged.
+      more_text: A string, extra text to be appended.
 
     Returns:
-      A boolean. False indicates the user has quit the pager.
+      A boolean: True: we have reached the end. False: the user has quit early. 
     """
 
     # With each page, more text can be added.
@@ -495,7 +494,7 @@ def main(argv=None):
       print(help_msg)
       return 0
 
-  isdelay = False
+  _is_delay = False
   for opt, _ in opts:
     # Prints the size of the terminal and returns.
     # Mutually exclusive to the paging of text and overrides that behaviour.
@@ -504,7 +503,7 @@ def main(argv=None):
         'Width: %d, Length: %d' % shutil.get_terminal_size())
       return 0
     elif opt in ('-d', '--delay'):
-      isdelay = True
+      _is_delay = True
     else:
       raise UsageError('Invalid arguments.')
 
@@ -515,7 +514,7 @@ def main(argv=None):
       fd = f.read()
   else:
     fd = sys.stdin.read()
-  Pager(fd, delay=isdelay).Page()
+  Pager(fd, delay=_is_delay).Page()
 
 
 if __name__ == '__main__':
