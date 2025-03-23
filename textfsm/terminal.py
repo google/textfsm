@@ -94,6 +94,9 @@ ANSI_END = '\002'
 UP_ARROW = '\033[A'
 DOWN_ARROW = '\033[B'
 
+# Navigational instructions for the user of the pager.
+PROMPT_QUESTION = 'n: next line, Space: next page, b: prev page, q: quit.'
+
 def _GetChar() -> str:
   """Read a single character from the tty.
 
@@ -254,6 +257,11 @@ def LineWrap(text, omit_sgr=False):
   text = str(text)
   text_multiline = []
   for text_line in text.splitlines():
+    if not text_line:
+      # Empty line, just add it.
+      text_multiline.append(text_line)
+      continue
+
     # Is this a line that needs splitting?
     while (omit_sgr and (len(StripAnsiText(text_line)) > term_width)) or (
         len(text_line) > term_width
@@ -265,6 +273,7 @@ def LineWrap(text, omit_sgr=False):
       else:
         (multiline_line, text_line) = _SplitWithSgr(text_line, term_width)
         text_multiline.append(multiline_line)
+    # If we have any text left over then add it.
     if text_line:
       text_multiline.append(text_line)
   return '\n'.join(text_multiline)
@@ -322,7 +331,6 @@ class Pager(object):
   def Reset(self) -> None:
     """Reset the pager to the top of the text."""
     self.first_line = 0
-    self._percent = 0
 
   def SetLines(self, lines: int = 0) -> typing.Tuple[int, int]:
     """Set number of lines to display at a time.
@@ -352,7 +360,7 @@ class Pager(object):
     self._text = ''
     self.Reset()
 
-  def _Display(self, start: int, length: int = 0) -> typing.Tuple[int, float]:
+  def _Display(self, start: int, length: int = 0) -> typing.Tuple[int, float, int]:
     """Display a range of lines from the text.
 
     Args:
@@ -364,28 +372,29 @@ class Pager(object):
 
     # Break text on newlines. But also break on line wrap.
     _text_list = LineWrap(self._text).splitlines()
+    _total_length = len(_text_list)
 
     # Bound start and end to be within the text.
     start = max(0, start)
     # If open-ended, trim to be whole of text.
     if not length:
-      end = len(_text_list)
+      end = _total_length
     else:
-      end = min(start + length, len(_text_list))
+      end = min(start + length, _total_length)
 
     for i in range(start, end):
-      self._WriteOut(_text_list[i] + '\n')
+      print(_text_list[i])
       if self._delay:
         time.sleep(self._delay)
 
-    return (end, end / len(_text_list) * 100)
+    return (end, end / len(_text_list) * 100, _total_length)
 
   def _WriteOut(self, text: str) -> None:
     """Write text to stdout."""
     sys.stdout.write(text)
     sys.stdout.flush()
 
-  def Page(self, more_text: str = '') -> bool:
+  def Page(self, more_text: str = '') -> None:
     """Page text.
 
     Continues to page through any text supplied in the constructor. Also, any
@@ -406,56 +415,49 @@ class Pager(object):
 
     _end = self.first_line
     # While there is more text to be displayed.
-    while self._percent < 100 or more_text:
+    while True:
       # Display a page of output.
-      (_end, self._percent) = self._Display(self.first_line, self._lines)
+      (_end, _percent, _total_length) = self._Display(
+        self.first_line, self._lines)
 
-      if self._percent >= 100:
-        # There is no more pages to display, skip prompting.
-        break
+      # If we are not reading streamed data then show % completion.
+      if not more_text:
+        wish = self._PromptUser(' (%d%%)' % _percent)
       else:
-        # If there is more content then prompt for what to display next.
+        # If we are reading streamed data then show the prompt only.
         wish = self._PromptUser()
 
-        if wish == 'g':           # Display the remaining content.
-          (_end, self._percent) = self._Display(self.first_line + self._lines)
-          # There is no more pages to display, skip prompting.
-          break
+      if wish == 'q':           # Quit.
+        break
 
-        if wish == 'q':           # Quit.
-          # Progress forward by a page.
-          self.first_line += self._lines
-          # Indicate that we have not shown the full document.
-          return False
+      if wish == 'g':           # Display the remaining content.
+        (_end, _percent, _total_length) = self._Display(_end)
+        self.first_line = _end - self._lines
+      elif wish == 'n':
+        # Enter, down a line.
+        self.first_line += 1
+      elif wish == DOWN_ARROW:
+        # Down a line.
+        self.first_line += 1
+      elif wish == UP_ARROW:
+        # Up a line.
+        self.first_line -= 1
+      elif wish == 'b':
+        # Up a page.
+        self.first_line -= self._lines
+      else:
+        # Down a page.
+        self.first_line += self._lines
+      
+      # Bound the first line to be within the text.
+      self.first_line = max(0, self.first_line)
+      self.first_line = min(_total_length-self._lines, self.first_line)
 
-        if wish == 'n':
-          # Enter, down a line.
-          self.first_line += 1
-        elif wish == DOWN_ARROW:
-          # Down a line.
-          self.first_line += 1
-        elif wish == UP_ARROW:
-          # Up a line.
-          self.first_line -= 1
-        elif wish == 'b':
-          # Up a page.
-          self.first_line -= self._lines
-        else:
-          # Down a page.
-          self.first_line += self._lines
-        
-        # Bound the first line to be at, or after, the text.
-        self.first_line = max(0, self.first_line)
-
-    # We have displayed everything, set first_line to the end.
+    # Set first_line to the end, so when we next page we start from there.
     self.first_line = _end
-    
-    return True     # We have shown the full content.
 
-  def _Prompt(self) -> str:
-    _percent = ' (%d%%)' % self._percent
-    question = ('n: next line, Space: next page, b: prev page, q: quit.'
-                + _percent)
+  def _Prompt(self, suffix='') -> str:
+    question = PROMPT_QUESTION + suffix
     # Truncate prompt to width of display.
     question = question[:self._cols]
     # Colorize the prompt.
@@ -465,13 +467,14 @@ class Pager(object):
     """Clear the prompt by over printing blank characters."""
     return '\r%s\r' % (' ' * self._cols)
 
-  def _PromptUser(self) -> str:
+  def _PromptUser(self, suffix='') -> str:
     """Prompt the user for the next action.
 
     Returns:
       A string, the character entered by the user.
     """
-    self._WriteOut(self._Prompt())
+
+    self._WriteOut(self._Prompt(suffix))
     ch = _GetChar()
     self._WriteOut(self._ClearPrompt())
     return ch
@@ -497,7 +500,7 @@ def main(argv=None):
   _is_delay = False
   for opt, _ in opts:
     # Prints the size of the terminal and returns.
-    # Mutually exclusive to the paging of text and overrides that behaviour.
+    # Mutually exclusive to the paging of text and overrides that behavior.
     if opt in ('-s', '--size'):
       print(
         'Width: %d, Length: %d' % shutil.get_terminal_size())
