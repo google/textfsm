@@ -94,7 +94,7 @@ class TerminalTest(unittest.TestCase):
 
   def testIssue1(self):
     self.assertEqual(10, len(terminal.StripAnsiText('boembabies' '\033[0m')))
-    terminal.TerminalSize = lambda: (10, 10)
+    terminal.shutil.get_terminal_size = lambda: (10, 10)
     text1 = terminal.LineWrap('\033[32m' + 'boembabies, ' * 10 + 'boembabies' +
                               '\033[0m', omit_sgr=True)
     text2 = ('\033[32m' +
@@ -115,6 +115,12 @@ class FakeTerminal(object):
   # pylint: disable=C6409
   def CountLines(self):
     return len(self.output.splitlines())
+  
+  def Show(self):
+    return self.output
+  
+  def Clear(self):
+    self.output = ''
 
   def flush(self):
     pass
@@ -124,40 +130,125 @@ class PagerTest(unittest.TestCase):
 
   def setUp(self):
     super(PagerTest, self).setUp()
-    sys.stdout = FakeTerminal()
-    self.get_ch_orig = terminal.Pager._GetCh
-    terminal.Pager._GetCh = lambda self: 'q'
+    self._output = FakeTerminal()
+    sys.stdout = self._output
+    self._GetChar_orig = terminal._GetChar
+    # Quit the pager immediately after the first page.
+    terminal._GetChar = lambda: 'q'
 
-    self.p = terminal.Pager()
+    self._sample_text = ''
+    for i in range(10):
+      self._sample_text += str(i) + '\n'
+
+    self.p = terminal.Pager(self._sample_text)
+    # Both the Prompt, and the ClearPrompt need to be accounted for.
+    self._prompt_lines = 2
 
   def tearDown(self):
     super(PagerTest, self).tearDown()
-    terminal.Pager._GetCh = self.get_ch_orig
+    terminal._GetChar = self._GetChar_orig
     sys.stdout = sys.__stdout__
 
-  def testPager(self):
+  def testDisplay(self):
+    # Display a couple of rows (20%).
+    self.assertEqual(self.p._Display(0, 2), 20.0)
+    self.assertEqual(self._output.Show(), '0\n1\n')
+    self._output.Clear()
+    self.assertEqual(self.p._Display(3, 5), 50.0)
+    self.assertEqual(self._output.Show(), '3\n4\n')
+    self._output.Clear()
+    # Display past the end of the text.
+    self.assertEqual(self.p._Display(8, 11), 100.0)
+    self.assertEqual(self._output.Show(), '8\n9\n')
+    self._output.Clear()
+    # Display before the start.
+    self.assertEqual(self.p._Display(-1, 1), 10.0)
+    self.assertEqual(self._output.Show(), '0\n')
+    self._output.Clear()
+    # Display the rest of the text.
+    self.assertEqual(self.p._Display(7), 100.0)
+    self.assertEqual(self._output.Show(), '7\n8\n9\n')
 
-    self.p.Clear()
-    self.assertEqual('', self.p._text)
-    self.assertEqual(0, self.p._displayed)
-    self.assertEqual(1, self.p._lastscroll)
+  def testPageAddsText(self):
+    _extra_text = '10\n11\n'
+    self.p.Page(_extra_text)
+    self.assertEqual(self.p._text, self._sample_text + _extra_text)
 
   def testPage(self):
-    txt = ''
-    for i in range(100):
-      txt += '%d a random line of text here\n' % i
-    self.p._text = txt
+    self.p.SetLines(3)
     self.p.Page()
-    self.assertEqual(self.p._cli_lines+2, sys.stdout.CountLines())
-
-    sys.stdout.output = ''
-    self.p = terminal.Pager()
-    self.p._text = ''
-    for _ in range(10):
-      self.p._text += 'a' * 100 + '\n'
+    self.assertEqual(
+      self._output.Show().splitlines()[:-self._prompt_lines], ['0', '1', '2'])
+  
+  def testPrompt(self):
+    self.p.SetLines(2)
+    # After paging once the progress will be 20%.
     self.p.Page()
-    self.assertEqual(20, sys.stdout.CountLines())
+    self._output.Clear()
+    # Confirm that prompt is at 20%
+    self.assertEqual(self.p._Prompt(), terminal.AnsiText(
+      'Enter: next line, Space: next page, b: prev page, q: quit. (20%)',
+      ['green']))
+    # truncate width to 10 cols, prompt should be likewise truncated.
+    self.p._cols = 10
+    self.assertEqual(self.p._Prompt(),
+                     terminal.AnsiText('Enter: nex', ['green']))
+    
+  def testPagerClear(self):
+    self.p.SetLines(2)
+    self.p.Page()
+    self.p.Reset()
+    # Clear output we aren't testing.
+    self._output.Clear()
+    # Paging after Reset resumes from the start.
+    self.p.Page()
+    self.assertEqual(self._output.Show().splitlines()[:-self._prompt_lines],
+                     ['0', '1'])
 
+  def testPageOffEnd(self):
+    self.p.SetLines(6)
+    # Quitting mid-pagination returns False.
+    self.assertFalse(self.p.Page())
+    # Paging to the end of the file returns True.
+    self.assertTrue(self.p.Page())
+
+  def testPageAdd(self):
+    self.p.SetLines(6)
+    # Quitting mid-pagination returns False.
+    self.assertFalse(self.p.Page())
+    # Clear output we aren't testing.
+    self._output.Clear()
+    # Paging to the end of the file returns True.
+    self.assertTrue(self.p.Page('10\n11\n'))
+    # We don't split the prompt off here, because we have reached the end.
+    self.assertEqual(self._output.Show().splitlines(),
+                     ['6', '7', '8', '9', '10', '11'])
+    
+    self.p.Reset()
+    self.assertFalse(self.p.Page())
+    self.assertTrue(self.p.Page())
+    # Clear output we aren't testing.
+    self._output.Clear()
+    self.assertTrue(self.p.Page())
+    # At the end, so nothing to show.
+    self.assertEqual(self._output.Show(), '')
+    # New data added, so we can page again.
+    self.assertTrue(self.p.Page('12\n13\n'))
+    self.assertEqual(self._output.Show().splitlines(), ['12', '13'])
+
+  def testPageAddPercent(self):
+    self.p.SetLines(2)
+    self.p.Page()
+    self.assertEqual(self.p._percent, 20)
+    self.p.Page()
+    self.assertEqual(self.p._percent, 40)
+    self.p.Page('10\n11\n')
+    # 505, rather than 60%, as the total size increased from 10 to 12.
+    self.assertEqual(self.p._percent, 50)
+    self.p.Page('12\n13\n14\n15')
+    self.assertEqual(self.p._percent, 50)
+    self.p.Page()
+    self.assertEqual(self.p._percent, 10 / 16 * 100)
 
 if __name__ == '__main__':
   unittest.main()
