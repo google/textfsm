@@ -94,6 +94,9 @@ ANSI_END = '\002'
 UP_ARROW = '\033[A'
 DOWN_ARROW = '\033[B'
 
+# Clear the screen and move the cursor to the top left.
+CLEAR_SCREEN = '\033[2J\033[H'
+
 # Navigational instructions for the user of the pager.
 PROMPT_QUESTION = 'n: next line, Space: next page, b: prev page, q: quit.'
 
@@ -388,8 +391,7 @@ class Pager(object):
     else:
       end = min(start + length, total_length)
 
-    # Clear the screen.
-    self._WriteOut('\033[2J\033[H')
+    self._WriteOut(CLEAR_SCREEN)
     for i in range(start, end):
       print(text_list[i])
       if self._delay:
