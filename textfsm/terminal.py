@@ -128,7 +128,7 @@ try:
         ch += _tty.read(2)
     finally:
       termios.tcsetattr(fd, termios.TCSADRAIN, old)
-      if '_tty' is not sys.stdin:
+      if '_tty' != sys.stdin:
         _tty.close()
     return ch
   _GetChar = _PosixGetChar
@@ -360,7 +360,8 @@ class Pager(object):
     self._text = ''
     self.Reset()
 
-  def _Display(self, start: int, length: int = 0) -> typing.Tuple[int, float, int]:
+  def _Display(self, start: int, length: int = 0
+               ) -> typing.Tuple[int, float, int]:
     """Display a range of lines from the text.
 
     Args:
@@ -382,6 +383,8 @@ class Pager(object):
     else:
       end = min(start + length, _total_length)
 
+    # Clear the screen.
+    self._WriteOut('\033[2J\033[H')
     for i in range(start, end):
       print(_text_list[i])
       if self._delay:
@@ -413,13 +416,16 @@ class Pager(object):
     if more_text:
       self._text += more_text
 
-    _end = self.first_line
+    _only_quit = False
+    # Display a page of output.
+    (_end, _percent, _total_length) = self._Display(
+      self.first_line, self._lines)
+    # If less than a page to display, then 'quit' is only navigation option.
+    if _total_length < self._lines:
+      _only_quit = True
+
     # While there is more text to be displayed.
     while True:
-      # Display a page of output.
-      (_end, _percent, _total_length) = self._Display(
-        self.first_line, self._lines)
-
       # If we are not reading streamed data then show % completion.
       if not more_text:
         wish = self._PromptUser(' (%d%%)' % _percent)
@@ -429,6 +435,10 @@ class Pager(object):
 
       if wish == 'q':           # Quit.
         break
+
+      if _only_quit:
+        # If we have less than a page of text, ignore navigational keys.
+        continue
 
       if wish == 'g':           # Display the remaining content.
         (_end, _percent, _total_length) = self._Display(_end)
@@ -452,6 +462,9 @@ class Pager(object):
       # Bound the first line to be within the text.
       self.first_line = max(0, self.first_line)
       self.first_line = min(_total_length-self._lines, self.first_line)
+      # Display a page of output.
+      (_end, _percent, _total_length) = self._Display(
+          self.first_line, self._lines)
 
     # Set first_line to the end, so when we next page we start from there.
     self.first_line = _end

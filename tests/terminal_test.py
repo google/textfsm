@@ -110,7 +110,9 @@ class FakeTerminal(object):
 
   # pylint: disable=C6409
   def write(self, text):
-    self.output += text
+    # Ignore initial clear screen output.
+    if text != '\033[2J\033[H':
+      self.output += text
 
   # pylint: disable=C6409
   def CountLines(self):
