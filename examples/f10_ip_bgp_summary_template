@@ -1,15 +1,13 @@
-Value Filldown RouterID (\d+(\.\d+){3})
-Value Filldown LocalAS (\d+)
-Value RemoteAS (\d+)
-Value Required RemoteIP (\d+(\.\d+){3})
-Value Uptime (\S+)
-Value Received_V4 (\d+)
-Value Received_V6 ()
-Value Status (\D.*)
+import regex from 'regexparser';
 
-Start
-  ^BGP router identifier ${RouterID}, local AS number ${LocalAS}
-  ^${RemoteIP}\s+${RemoteAS}(\s+\S+){5}\s+${Uptime}\s+${Received_V4} -> Next.Record
-  ^${RemoteIP}\s+${RemoteAS}(\s+\S+){5}\s+${Uptime}\s+${Status} -> Next.Record
+const router = regex`
+	^BGP router identifier ${ROUTER_ID}, local AS number ${LOCAL_AS}
+	^${REMOTE_IP}\s+${REMOTE_AS}(${\s+\S+}){5}\s+${UP_TIME}\s+${RECEIVED_V4}
+	^${REMOTE_IP}\s+${REMOTE_AS}(${\s+\S+}){5}\s+${UP_TIME}\s+${STATUS}
+`;
 
-EOF
+// Assuming that Next.Record is a known event handler,
+// you can use it like this:
+router.on('Next.Record', (data) => {
+  // process the data
+});

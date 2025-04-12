@@ -1,16 +1,48 @@
-BGP router identifier 192.0.2.1, local AS number 65551
-BGP table version is 173711, main routing table version 173711
-255 network entrie(s) using 43260 bytes of memory
-1114 paths using 75752 bytes of memory
-BGP-RIB over all using 76866 bytes of memory
-23 BGP path attribute entrie(s) using 1472 bytes of memory
-3 BGP AS-PATH entrie(s) using 137 bytes of memory
-10 BGP community entrie(s) using 498 bytes of memory
-2 BGP route-reflector cluster entrie(s) using 62 bytes of memory
-6 neighbor(s) using 28128 bytes of memory
+import routerIdentifier from "routerIdentifier"
+routerIdentifier = "192.0.2.1";
+routerIdentifierLocalAs = 65551;
+bgpTableVersion = 173711;
+memoryUsageBgpRouters = 43260;
+memoryUsageBgpPaths = 75752;
+memoryUsageBgpRib = 76866;
+memoryUsageBgpPathAttributes = 1472;
+memoryUsageBgpAsPath = 137;
+memoryUsageBgpCommunities = 498;
+memoryUsageBgpRouteReflectors = 62;
+memoryUsageNeighbors = 28128;
 
-Neighbor        AS            MsgRcvd  MsgSent     TblVer  InQ  OutQ Up/Down  State/Pfx
-
-10.10.10.10     65551             647      397      73711    0   (0) 10:37:12         5
-10.10.100.1     65552             664      416      73711    0   (0) 10:38:27         0
-10.100.10.9     65553             709      526      73711    0   (0) 07:55:38         1
+neighbors = [
+  {
+    "neighborIp": "10.10.10.10",
+    "neighborAs": 65551,
+    "msgRcvd": 647,
+    "msgSent": 397,
+    "tblVer": 73711,
+    "inq": 0,
+    "outq": 0,
+    "upDown": "10:37:12",
+    "statePfx": 5
+  },
+  {
+    "neighborIp": "10.10.100.1",
+    "neighborAs": 65552,
+    "msgRcvd": 664,
+    "msgSent": 416,
+    "tblVer": 73711,
+    "inq": 0,
+    "outq": 0,
+    "upDown": "10:38:27",
+    "statePfx": 0
+  },
+  {
+    "neighborIp": "10.100.10.9",
+    "neighborAs": 65553,
+    "msgRcvd": 709,
+    "msgSent": 526,
+    "tblVer": 73711,
+    "inq": 0,
+    "outq": 0,
+    "upDown": "07:55:38",
+    "statePfx": 1
+  }
+];

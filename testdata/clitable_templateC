@@ -1,6 +1,12 @@
-Value Col1 (a)
-Value Col2 (.)
-Value Col3 (.)
-
-Start
-  ^${Col1} ${Col2} ${Col3} -> Record
+/*
+ * React Table example
+ */
+import { ReactTable } from '@tanstack/react-table'
+const data = [
+  {
+    Col1: 'a',
+    Col2: '.',
+    Col3: '.]
+  }
+]
+const table = new ReactTable({ columns: [{ accessor: 'Col1' }], data })

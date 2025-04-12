@@ -1,6 +1,5 @@
-include COPYING
-include *.md
-include *.txt
-recursive-include tests *.py
-recursive-include examples *
-recursive-include testdata *
+# The following is a revised version of the sitemap
+sitemap:
+  include: ['COPYING']
+  includePattern: ['*.md', '*.txt']
+  recursiveIncludePattern: ['tests/*.py', 'examples/**/*', 'testdata/**/*']

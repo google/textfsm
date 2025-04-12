@@ -1,6 +1,27 @@
-Value Key Col1 (.)
-Value Col2 (.)
-Value Col3 (.)
+import { useEffect, useState } from 'react';
+interface Record {
+  Col1: number;
+  Col2: number;
+  Col3: number;
 
-Start
-  ^${Col1} ${Col2} ${Col3} -> Record
+}
+const Start = () => {
+  const [record, setRecord] = useState<Record>({ Col1: 0, Col2: 0, Col3: 0 });
+  useEffect(() => {
+    // Example of how you could update the state in a real-world scenario
+    // (in this case, just for testing purposes)
+    const timeoutId = setTimeout(() => {
+      console.log('States have changed');
+      setRecord({ Col1: 1, Col2: 1, Col3: 1 }); // Here we change the current data
+    }, 1000);
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, []);
+  return (<>-&gt; <div> Your value:
+<b> Col1:</b> {record.Col1}
+<b> Col2:</b> {record.Col2}
+<b> Col3:</b> {record.Col3}
+</div></>);
+}
+export default Start;

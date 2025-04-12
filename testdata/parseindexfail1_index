@@ -1,11 +1,13 @@
-# First line is header fields for columns
-# Regular expressions are supported in all fields except the first.
-# Last field supports variable length command completion.
-# abc[[xyz]] is expended to abc(x(y(z)?)?)?, regexp inside [[]] i not supported
-#
-# Type in header name.
-Templatebogus, Hostname, Vendor, Command
-#
-clitable_templateA:clitable_templateB, .*, VendorA, sh[[ow]] ve[[rsion]]
-clitable_templateC, .*, VendorB, sh[[ow]] ve[[rsion]]
-clitable_templateD, .*, VendorA, sh[[ow]] in[[terfaces]]
+file header
+# Description of the file and its usage
+
+# Each line represents a table entry and the fields are separated by commas
+
+# Supported fields
+# Field1: 
+# Field2: 
+# ... 
+
+# Example table entries
+# clibtable_templateA:clitable_templateB, .* , VendorA, show version
+

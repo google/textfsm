@@ -1,17 +1,9 @@
-Value Model (\S+)
-Value Memory (\S+)
-Value ConfigRegister (0x\S+)
-Value Uptime (.*)
-Value Version (.*?)
-Value ReloadReason (.*)
-Value ReloadTime (.*)
-Value ImageFile ([^"]+)
+let regexPattern = /Value Model \((\S+)\)/; let regexPattern = /Value Memory \((\S+)\)/; let regexPattern = /Value ConfigRegister \(0x(\S+)\)/; let regexPattern = /Value Uptime (.+?)$/; let regexPattern = /Value Version (.+?)$/; let regexPattern = /Value ReloadReason (.+?)$/; let regexPattern = /Value ReloadTime (.+?)$/; let regexPattern = /Value ImageFile "([^"]+)"/;
 
 Start
-  ^Cisco IOS Software.*Version ${Version},
-  ^.*uptime is ${Uptime}
-  ^System returned to ROM by ${ReloadReason}
-  ^System restarted at ${ReloadTime}
-  ^System image file is "${ImageFile}"
-  ^cisco ${Model} .* with ${Memory} bytes of memory
-  ^Configuration register is ${ConfigRegister}
+  ^Cisco IOS Software.*Version \${Version},
+  ^.*uptime is \${Uptime}
+  ^System returned to ROM by \${ReloadReason}
+  ^System restarted at \${ReloadTime}
+  ^System image file is "\${ImageFile}"\n  ^cisco \${Model} .* with \${Memory} bytes of memory
+  ^Configuration register is \${ConfigRegister}

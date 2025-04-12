@@ -1,10 +1,16 @@
-# First line is header fields for columns
-# Regular expressions are supported in all fields except the first.
-# Last field supports variable length command completion.
-# abc[[xyz]] is expended to abc(x(y(z)?)?)?, regexp inside [[]] i not supported
-#
-Devicename, Vendor, Command
-#
-.*, VendorA, sh[[ow]] ve[[rsion]]
-.*, VendorB, sh[[ow]] ve[[rsion]]
-.*, VendorA, sh[[ow]] in[[terfaces]]
+/* 
+ * Header fields for columns 
+ * 
+ * Regular expressions are supported in all fields except the first. 
+ * 
+ * Command completion is supported in the last field. 
+ */
+/*
+ * Expanded regular expressions
+ */
+deviceName, vendor, command
+/*
+ *.*,   vendorA, show{{'version'}}
+ *.*,   vendorB, show{{'version'}}
+ *.*,   vendorA, show{{'interfaces'}}
+*/

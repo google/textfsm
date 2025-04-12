@@ -1,12 +1,22 @@
-Groups: 3 Peers: 3 Down peers: 0
-Table          Tot Paths  Act Paths Suppressed    History Damp State    Pending
-inet.0               947        310          0          0          0          0
-inet6.0              849        807          0          0          0          0
-Peer                     AS      InPkt     OutPkt    OutQ   Flaps Last Up/Dwn State|#Active/Received/Damped...
-10.247.68.182         65550     131725   28179233       0      11     6w3d17h Establ
-  inet.0: 4/5/1
-  inet6.0: 0/0/0
-10.254.166.246        65550     136159   29104942       0       0      6w5d6h Establ
-  inet.0: 0/0/0
-  inet6.0: 7/8/1
-192.0.2.100           65551    1269381    1363320       0       1      9w5d6h 2/3/0 0/0/0
+import os
+import netkit
+
+class BGP Router:
+    def __init__(self, as_number, router_id):
+        self.as_number = as_number
+        self.router_id = router_id
+        self.peers = {}
+
+    def add_peer(self, peer_address, peer_as):
+        self.peers[peer_address] = peer_as
+
+    def print_peers(self):
+        for peer_address, peer_as in self.peers.items():
+            print(f'Peer: {peer_address}
+AS: {peer_as}
+')
+
+bgp_router = BGP Router(65550, "10.247.68.182")
+bgp_router.add_peer("10.254.166.246", 65550)
+bgp_router.print_peers()
+
