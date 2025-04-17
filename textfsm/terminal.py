@@ -22,14 +22,7 @@ import re
 import shutil
 import sys
 import time
-
-try:
-  # Import fails on Windows machines.
-  import fcntl  # pylint: disable=g-import-not-at-top
-  import termios  # pylint: disable=g-import-not-at-top
-  import tty  # pylint: disable=g-import-not-at-top
-except (ImportError, ModuleNotFoundError):
-  pass
+import typing
 
 # ANSI, ISO/IEC 6429 escape sequences, SGR (Select Graphic Rendition) subset.
 SGR = {
@@ -92,13 +85,70 @@ BG_COLOR_WORDS = {
     'grey': ['bg_white'],
 }
 
-
 # Characters inserted at the start and end of ANSI strings
 # to provide hinting for readline and other clients.
 ANSI_START = '\001'
 ANSI_END = '\002'
 
+# Arrow key sequences.
+UP_ARROW = '\033[A'
+DOWN_ARROW = '\033[B'
 
+# Clear the screen and move the cursor to the top left.
+CLEAR_SCREEN = '\033[2J\033[H'
+
+# Navigational instructions for the user of the pager.
+PROMPT_QUESTION = 'n: next line, Space: next page, b: prev page, q: quit.'
+
+
+def _GetChar() -> str:
+  """Read a single character from the tty.
+
+  Returns:
+    A string, the character read.
+  """
+  # Default to 'q' to quit out of paging content.
+  return 'q'
+
+try:
+  # Import fails on Windows machines.
+  # pylint: disable=g-import-not-at-top
+  import termios
+  import tty
+
+  def _PosixGetChar() -> str:
+    """Read a single character from the tty."""
+    try:
+      read_tty = open('/dev/tty')
+    except IOError:
+      # No TTY, revert to stdin
+      read_tty = sys.stdin
+    fd = read_tty.fileno()
+    old = termios.tcgetattr(fd)
+    try:
+      tty.setraw(fd)
+      ch = read_tty.read(1)
+      # Also support arrow key shortcuts (escape + 2 chars)
+      if ord(ch) == 27:
+        ch += read_tty.read(2)
+    finally:
+      termios.tcsetattr(fd, termios.TCSADRAIN, old)
+      if '_tty' != sys.stdin:
+        read_tty.close()
+    return ch
+  _GetChar = _PosixGetChar
+except (ImportError, ModuleNotFoundError):
+  # If we are on MS Windows then try using msvcrt library instead.
+  import msvcrt
+  def _MSGetChar() -> str:
+    ch = msvcrt.getch()                                                         # type: ignore
+      # Also support arrow key shortcuts (escape + 2 chars)
+    if ord(ch) == 27:
+      ch += msvcrt.getch()                                                      # type: ignore
+    return ch
+  _GetChar = _MSGetChar
+
+# Regular expression to match ANSI/SGR escape sequences.
 sgr_re = re.compile(r'(%s?\033\[\d+(?:;\d+)*m%s?)' % (ANSI_START, ANSI_END))
 
 
@@ -212,6 +262,11 @@ def LineWrap(text, omit_sgr=False):
   text = str(text)
   text_multiline = []
   for text_line in text.splitlines():
+    if not text_line:
+      # Empty line, just add it.
+      text_multiline.append(text_line)
+      continue
+
     # Is this a line that needs splitting?
     while (omit_sgr and (len(StripAnsiText(text_line)) > term_width)) or (
         len(text_line) > term_width
@@ -223,6 +278,7 @@ def LineWrap(text, omit_sgr=False):
       else:
         (multiline_line, text_line) = _SplitWithSgr(text_line, term_width)
         text_multiline.append(multiline_line)
+    # If we have any text left over then add it.
     if text_line:
       text_multiline.append(text_line)
   return '\n'.join(text_multiline)
@@ -251,7 +307,7 @@ class Pager(object):
   displayed, or the user has quit the pager.
 
   Currently supported keybindings are:
-    <enter> - one line down
+    n - one line down
     <down arrow> - one line down
     b - one page up
     <up arrow> - one line up
@@ -260,7 +316,7 @@ class Pager(object):
     <space> - one page down
   """
 
-  def __init__(self, text=None, delay=None):
+  def __init__(self, text: str = '', delay: bool = False) -> None:
     """Constructor.
 
     Args:
@@ -268,49 +324,87 @@ class Pager(object):
       delay: A boolean, if True will cause a slight delay between line printing
         for more obvious scrolling.
     """
-    self._text = text or ''
-    self._delay = delay
-    try:
-      self._tty = open('/dev/tty')
-    except IOError:
-      # No TTY, revert to stdin
-      self._tty = sys.stdin
-    self.SetLines(None)
+    self._text = text
     self.Reset()
+    self.SetLines()
+    # Add 0.005 sec delay between lines.
+    if delay:
+      self._delay = 0.005
+    else:
+      self._delay = 0
 
-  def __del__(self):
-    """Deconstructor, closes tty."""
-    if getattr(self, '_tty', sys.stdin) is not sys.stdin:
-      self._tty.close()
-
-  def Reset(self):
+  def Reset(self) -> None:
     """Reset the pager to the top of the text."""
-    self._displayed = 0
-    self._currentpagelines = 0
-    self._lastscroll = 1
-    self._lines_to_show = self._cli_lines
+    self.first_line = 0
 
-  def SetLines(self, lines):
-    """Set number of screen lines.
+  def SetLines(self, num_lines: int = 0) -> typing.Tuple[int, int]:
+    """Set number of lines to display at a time.
 
     Args:
-      lines: An int, number of lines. If None, use terminal dimensions.
+      num_lines: An int, number of lines. If 0 use terminal dimensions.
+        Maximum number should be one less than full terminal height,
+        to allow for a user prompt. 
 
     Raises:
       ValueError, TypeError: Not a valid integer representation.
+
+    Returns:
+      Tuple, the width and lines of the terminal.
     """
 
-    (self._cli_cols, self._cli_lines) = shutil.get_terminal_size()
+    # Get the terminal size.
+    (cols, lines) = shutil.get_terminal_size()
+    # If we want paging by other than a whole window height.
+    # For a whole window height, we drop one line to leave room for prompting.
+    self._lines = int(num_lines) or lines - 1
+    # Must be at least two rows, one row of output and one for the prompt.
+    self._lines = max(2, self._lines)
+    # Only number of rows is user configurable, we keep the terminal width.
+    self._cols = cols
+    return (self._cols, self._lines)
 
-    if lines:
-      self._cli_lines = int(lines)
-
-  def Clear(self):
+  def Clear(self) -> None:
     """Clear the text and reset the pager."""
     self._text = ''
     self.Reset()
 
-  def Page(self, text=None, show_percent=None):
+  def _Display(self, start: int, length: int = 0
+               ) -> typing.Tuple[int, float, int]:
+    """Display a range of lines from the text.
+
+    Args:
+      start: An int, the first line to display.
+      length: An int, the number of lines to display.
+    Returns:
+      Tuple, the next line after, and a percentage for where that line is.
+    """
+
+    # Break text on newlines. But also break on line wrap.
+    text_list = LineWrap(self._text).splitlines()
+    total_length = len(text_list)
+
+    # Bound start and end to be within the text.
+    start = max(0, start)
+    # If open-ended, trim to be whole of text.
+    if not length:
+      end = total_length
+    else:
+      end = min(start + length, total_length)
+
+    self._WriteOut(CLEAR_SCREEN)
+    for i in range(start, end):
+      print(text_list[i])
+      if self._delay:
+        time.sleep(self._delay)
+
+    return (end, end / len(text_list) * 100, total_length)
+
+  def _WriteOut(self, text: str) -> None:
+    """Write text to stdout."""
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+  def Page(self, more_text: str = '') -> None:
     """Page text.
 
     Continues to page through any text supplied in the constructor. Also, any
@@ -319,115 +413,92 @@ class Pager(object):
     the user, or the user quits the pager.
 
     Args:
-      text: A string, extra text to be paged.
-      show_percent: A boolean, if True, indicate how much is displayed so far.
-        If None, this behaviour is 'text is None'.
+      more_text: A string, extra text to be appended.
 
     Returns:
-      A boolean. If True, more data can be displayed to the user. False
-        implies that the user has quit the pager.
+      A boolean: True: we have reached the end. False: the user has quit early. 
     """
-    if text is not None:
-      self._text += text
 
-    if show_percent is None:
-      show_percent = text is None
-    self._show_percent = show_percent
+    # With each page, more text can be added.
+    if more_text:
+      self._text += more_text
 
-    text = LineWrap(self._text).splitlines()
+    only_quit = False
+    # Display a page of output.
+    (end, percent, total_length) = self._Display(self.first_line, self._lines)
+    # If less than a page to display, then 'quit' is only navigation option.
+    if total_length < self._lines:
+      only_quit = True
+
+    # While there is more text to be displayed.
     while True:
-      # Get a list of new lines to display.
-      self._newlines = text[
-          self._displayed : self._displayed + self._lines_to_show
-      ]
-      for line in self._newlines:
-        sys.stdout.write(line + '\n')
-        if self._delay and self._lastscroll > 0:
-          time.sleep(0.005)
-      self._displayed += len(self._newlines)
-      self._currentpagelines += len(self._newlines)
-      if self._currentpagelines >= self._lines_to_show:
-        self._currentpagelines = 0
-        wish = self._AskUser()
-        if wish == 'q':  # Quit pager.
-          return False
-        elif wish == 'g':  # Display till the end.
-          self._Scroll(len(text) - self._displayed + 1)
-        elif wish == '\r':  #  Enter, down a line.
-          self._Scroll(1)
-        elif wish == '\033[B':  # Down arrow, down a line.
-          self._Scroll(1)
-        elif wish == '\033[A':  # Up arrow, up a line.
-          self._Scroll(-1)
-        elif wish == 'b':  # Up a page.
-          self._Scroll(0 - self._cli_lines)
-        else:  # Next page.
-          self._Scroll()
-      if self._displayed >= len(text):
+      # If we are not reading streamed data then show % completion.
+      if not more_text:
+        wish = self._PromptUser(' (%d%%)' % percent)
+      else:
+        # If we are reading streamed data then show the prompt only.
+        wish = self._PromptUser()
+
+      if wish == 'q':           # Quit.
         break
 
-    return True
+      if only_quit:
+        # If we have less than a page of text, ignore navigational keys.
+        continue
 
-  def _Scroll(self, lines=None):
-    """Set attributes to scroll the buffer correctly.
+      if wish == 'g':           # Display the remaining content.
+        (end, _, total_length) = self._Display(end)
+        self.first_line = end - self._lines
+      elif wish == 'n':
+        # Enter, down a line.
+        self.first_line += 1
+      elif wish == DOWN_ARROW:
+        # Down a line.
+        self.first_line += 1
+      elif wish == UP_ARROW:
+        # Up a line.
+        self.first_line -= 1
+      elif wish == 'b':
+        # Up a page.
+        self.first_line -= self._lines
+      else:
+        # Down a page.
+        self.first_line += self._lines
+
+      # Bound the first line to be within the text.
+      self.first_line = max(0, self.first_line)
+      self.first_line = min(total_length-self._lines, self.first_line)
+      # Display a page of output.
+      (end, percent, total_length) = self._Display(
+          self.first_line, self._lines)
+
+    # Set first_line to the end, so when we next page we start from there.
+    self.first_line = end
+
+  def _Prompt(self, suffix='') -> str:
+    question = PROMPT_QUESTION + suffix
+    # Truncate prompt to width of display.
+    question = question[:self._cols]
+    # Colorize the prompt.
+    return AnsiText(question, ['green'])
+
+  def _ClearPrompt(self) -> str:
+    """Clear the prompt by over printing blank characters."""
+    return '\r%s\r' % (' ' * self._cols)
+
+  def _PromptUser(self, suffix='') -> str:
+    """Prompt the user for the next action.
 
     Args:
-      lines: An int, number of lines to scroll. If None, scrolls by the terminal
-        length.
-    """
-    if lines is None:
-      lines = self._cli_lines
-
-    if lines < 0:
-      self._displayed -= self._cli_lines
-      self._displayed += lines
-      if self._displayed < 0:
-        self._displayed = 0
-      self._lines_to_show = self._cli_lines
-    else:
-      self._lines_to_show = lines
-
-    self._lastscroll = lines
-
-  def _AskUser(self):
-    """Prompt the user for the next action.
+      suffix: A string, to be appended to the prompt.
 
     Returns:
       A string, the character entered by the user.
     """
-    if self._show_percent:
-      progress = int(self._displayed * 100 / (len(self._text.splitlines())))
-      progress_text = ' (%d%%)' % progress
-    else:
-      progress_text = ''
-    question = AnsiText(
-        'Enter: next line, Space: next page, b: prev page, q: quit.%s'
-        % progress_text,
-        ['green'],
-    )
-    sys.stdout.write(question)
-    sys.stdout.flush()
-    ch = self._GetCh()
-    sys.stdout.write('\r%s\r' % (' ' * len(question)))
-    sys.stdout.flush()
-    return ch
 
-  def _GetCh(self):
-    """Read a single character from the user.
-
-    Returns:
-      A string, the character read.
-    """
-    fd = self._tty.fileno()
-    old = termios.tcgetattr(fd)
-    try:
-      tty.setraw(fd)
-      ch = self._tty.read(1)
-      # Also support arrow key shortcuts (escape + 2 chars)
-      if ord(ch) == 27:
-        ch += self._tty.read(2)
-    finally:
-      termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    self._WriteOut(self._Prompt(suffix))
+    ch = _GetChar()
+    self._WriteOut(self._ClearPrompt())
     return ch
 
 
@@ -449,16 +520,15 @@ def main(argv=None):
       print(help_msg)
       return 0
 
-  isdelay = False
+  is_delay = False
   for opt, _ in opts:
     # Prints the size of the terminal and returns.
-    # Mutually exclusive to the paging of text and overrides that behaviour.
+    # Mutually exclusive to the paging of text and overrides that behavior.
     if opt in ('-s', '--size'):
-      print(
-        'Width: %d, Length: %d' % shutil.get_terminal_size())
+      print('Width: %d, Length: %d' % shutil.get_terminal_size())
       return 0
     elif opt in ('-d', '--delay'):
-      isdelay = True
+      is_delay = True
     else:
       raise UsageError('Invalid arguments.')
 
@@ -469,7 +539,7 @@ def main(argv=None):
       fd = f.read()
   else:
     fd = sys.stdin.read()
-  Pager(fd, delay=isdelay).Page()
+  Pager(fd, delay=is_delay).Page()
 
 
 if __name__ == '__main__':
