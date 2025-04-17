@@ -1,5 +1,6 @@
 *.pyc
 
 /dist/
+/build/
 
 /*.egg-info
