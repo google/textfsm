@@ -887,7 +887,7 @@ class TextFSM(object):
 
     return True
 
-  def ParseText(self, text, eof=True):
+  def ParseText(self, text, eof=True, max_input_len=None):
     """Passes CLI output through FSM and returns list of tuples.
 
     First tuple is the header, every subsequent tuple is a row.
@@ -896,13 +896,25 @@ class TextFSM(object):
       text: (str), Text to parse with embedded newlines.
       eof: (boolean), Set to False if we are parsing only part of the file.
         Suppresses triggering EOF state.
+      max_input_len: (int or None), When set, raises ``TextFSMError`` if the
+        length of *text* (in characters) exceeds this value before any regex
+        matching begins.  Use this to guard against adversarially large inputs
+        that could cause pathological regex backtracking (ReDoS) in complex
+        templates.  ``None`` (the default) disables the check and preserves
+        existing behaviour.
 
     Raises:
-      TextFSMError: An error occurred within the FSM.
+      TextFSMError: An error occurred within the FSM, or *max_input_len* was
+        exceeded.
 
     Returns:
       List of Lists.
     """
+    if max_input_len is not None and text and len(text) > max_input_len:
+      raise TextFSMError(
+          'Input length %d exceeds the configured maximum of %d characters.'
+          % (len(text), max_input_len)
+      )
 
     lines = []
     if text:
@@ -920,7 +932,7 @@ class TextFSM(object):
 
     return self._result
 
-  def ParseTextToDicts(self, text, eof=True):
+  def ParseTextToDicts(self, text, eof=True, max_input_len=None):
     """Calls ParseText and turns the result into list of dicts.
 
     List items are dicts of rows, dict key is column header and value is column
@@ -930,15 +942,18 @@ class TextFSM(object):
       text: (str), Text to parse with embedded newlines.
       eof: (boolean), Set to False if we are parsing only part of the file.
         Suppresses triggering EOF state.
+      max_input_len: (int or None), When set, raises ``TextFSMError`` if the
+        length of *text* exceeds this value before any regex matching begins.
+        See ``ParseText`` for full details.
 
     Raises:
-      TextFSMError: An error occurred within the FSM.
+      TextFSMError: An error occurred within the FSM, or *max_input_len* was
+        exceeded.
 
     Returns:
       List of dicts.
     """
-
-    result_lists = self.ParseText(text, eof)
+    result_lists = self.ParseText(text, eof, max_input_len=max_input_len)
     result_dicts = []
 
     for row in result_lists:
