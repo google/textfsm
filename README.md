@@ -22,6 +22,61 @@ licence for the benefit of the wider community.
 
 [**See documentation for more details.**](https://github.com/google/textfsm/wiki/TextFSM)
 
+Go Version (Golang)
+-------------------
+An idiomatic Golang port of TextFSM is available in the `go/` directory, mirroring the core functionality of the Python library (`textfsm`, `clitable`, `texttable`, and `terminal`).
+
+### Proposed Usage
+
+To use the Go implementation as a library in your project:
+
+```bash
+go get github.com/google/textfsm/go@latest
+```
+
+Example usage in Go:
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/google/textfsm/go/textfsm"
+)
+
+func main() {
+	tmpl := `Value Required Interface (\S+)
+Value Status (up|down)
+
+Start
+  ^${Interface} is ${Status} -> Record
+`
+	fsm, err := textfsm.NewFSM(strings.NewReader(tmpl))
+	if err != nil {
+		panic(err)
+	}
+
+	input := "GigabitEthernet0/0 is up\nGigabitEthernet0/1 is down"
+	records, err := fsm.ParseText(input, true)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, row := range records {
+		fmt.Printf("%v\n", row)
+	}
+}
+```
+
+A CLI utility mirroring `textfsm/parser.py` is also provided under `go/cmd/textfsm`:
+
+```bash
+go run ./go/cmd/textfsm <template_file> [input_file [reference_file]]
+```
+
 Before contributing
 -------------------
 If you are not a Google employee, our lawyers insist that you sign a Contributor
