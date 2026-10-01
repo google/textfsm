@@ -321,6 +321,26 @@ a,b, c, d  # Trim comment
     self.assertEqual('c', t.header[2])
     self.assertEqual('a', t.header[0])
 
+  def testCsvWithoutHeaderPreservesFirstRow(self):
+    for source in ('1,2\n', '# comment\n1,2\n3,4\n'):
+      for buf in (io.StringIO(source), io.BytesIO(source.encode('utf-8'))):
+        with self.subTest(source=source, buffer_type=type(buf)):
+          t = texttable.TextTable()
+          t.CsvToTable(buf, header=False)
+          expected = [['1', '2']]
+          if '3,4' in source:
+            expected.append(['3', '4'])
+          self.assertEqual(expected, [row.values for row in t])
+          self.assertEqual([0, 1], t.header.values)
+          self.assertEqual(0, t.header.row)
+          self.assertEqual(list(range(1, t.size + 1)), [row.row for row in t])
+
+  def testCsvHeaderKeepsZeroRowIndex(self):
+    t = texttable.TextTable()
+    t.CsvToTable(io.StringIO('a,b\n1,2\n3,4\n'))
+    self.assertEqual(0, t.header.row)
+    self.assertEqual([1, 2], [row.row for row in t])
+
   def testAppend(self):
     t = self.BasicTable()
     t.Append(['10', '20', '30'])
