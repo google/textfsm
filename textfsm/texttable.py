@@ -370,7 +370,7 @@ class TextTable(object):
 
     new_table = self.__class__()
     # pylint: disable=protected-access
-    new_table._table = [self.header]
+    new_table._table = [copy.deepcopy(self.header)]
     for row in self[1:]:
       new_table.Append(row)
     return new_table
@@ -394,7 +394,7 @@ class TextTable(object):
 
     new_table = self.__class__()
     # pylint: disable=protected-access
-    new_table._table = [self.header]
+    new_table._table = [copy.deepcopy(self.header)]
     for row in self:
       if function(row):
         new_table.Append(row)
@@ -415,7 +415,7 @@ class TextTable(object):
     """
     new_table = self.__class__()
     # pylint: disable=protected-access
-    new_table._table = [self.header]
+    new_table._table = [copy.deepcopy(self.header)]
     for row in self:
       filtered_row = function(row)
       if filtered_row:
