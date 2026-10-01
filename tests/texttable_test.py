@@ -391,6 +391,18 @@ a,b, c, d  # Trim comment
     self.assertRaises(IndexError, t.AddColumn, 'x', col_index=-7)
     self.assertRaises(texttable.TableError, t.AddColumn, 'b')
 
+  def testAddColumnChecksExactHeaderNames(self):
+    for column, col_index in [('name', -1), ('10', 0)]:
+      with self.subTest(column=column):
+        t = texttable.TextTable()
+        t.header = ['hostname']
+        t.Append(['10'])
+        t.AddColumn(column, default='new', col_index=col_index)
+        self.assertIn(column, t.header)
+        self.assertEqual('10', t[1]['hostname'])
+        self.assertEqual('new', t[1][column])
+        self.assertRaises(texttable.TableError, t.AddColumn, column)
+
   def testAddTable(self):
     t = self.BasicTable()
     t2 = self.BasicTable()
