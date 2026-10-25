@@ -16,6 +16,7 @@
 
 """Unittest for text table."""
 
+import copy
 import io
 import unittest
 from textfsm import terminal
@@ -176,6 +177,24 @@ class UnitTestTextTable(unittest.TestCase):
     filtered_table = old_table.Filter(
         function=lambda row: row['a'] == '10')
     self.assertEqual(1, filtered_table.size)
+
+  def testDerivedTableHeadersAreIndependent(self):
+    operations = (
+        ('copy', copy.copy),
+        ('filter', lambda table: table.Filter()),
+        ('map', lambda table: table.Map(lambda row: row)),
+        ('add', lambda table: table + self.BasicTable()),
+    )
+    for name, operation in operations:
+      with self.subTest(operation=name):
+        original = self.BasicTable()
+        derived = operation(original)
+        derived.AddColumn('extra', default='value')
+        self.assertEqual(['a', 'b', 'c'], original.header.values)
+        self.assertEqual(['1', '2', '3'], original[1].values)
+        self.assertEqual(['a', 'b', 'c', 'extra'], derived.header.values)
+        original.AddColumn('original_only')
+        self.assertNotIn('original_only', derived.header)
 
   def testFilterNone(self):
     t = texttable.TextTable()
