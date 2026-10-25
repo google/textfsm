@@ -971,7 +971,7 @@ class TextTable(object):
     Raises:
       TableError: Column name already exists.
     """
-    if column in self.table:
+    if column in self.header:
       raise TableError('Column %r already in table.' % column)
     if col_index == -1:
       self._table[0][column] = column
