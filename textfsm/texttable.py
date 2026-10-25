@@ -1037,6 +1037,8 @@ class TextTable(object):
       line = buf.readline()
       header_str = ''
       while not header_str:
+        if not line:
+          return self.size
         if not isinstance(line, str):
           line = line.decode('utf-8')
         # Remove comments.

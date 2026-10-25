@@ -335,6 +335,16 @@ a,b, c, d  # Trim comment
     self.assertEqual(['5', '6', '7', '8'], t[2].values)
     self.assertEqual(2, t.size)
 
+  def testCsvToTableWithoutHeaderContent(self):
+    for content in ('', '\n \n', '# comment\n  # another comment\n'):
+      for buffer_class, value in (
+          (io.StringIO, content), (io.BytesIO, content.encode('utf-8'))):
+        with self.subTest(content=content, buffer=buffer_class):
+          table = self.BasicTable()
+          self.assertEqual(0, table.CsvToTable(buffer_class(value)))
+          self.assertEqual(0, table.size)
+          self.assertEqual([], list(table.header))
+
   def testHeaderIndex(self):
     t = self.BasicTable()
     self.assertEqual('c', t.header[2])
