@@ -16,14 +16,9 @@
 
 """Unittest for text table."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from builtins import range
+import copy
+import io
 import unittest
-from io import StringIO
 from textfsm import terminal
 from textfsm import texttable
 
@@ -84,8 +79,8 @@ class UnitTestRow(unittest.TestCase):
     self.assertEqual(3, len(row))
 
     # Contains.
-    self.assertTrue('two' not in row)
-    self.assertTrue('Two' in row)
+    self.assertNotIn('two', row)
+    self.assertIn('Two', row)
 
     # Iteration.
     self.assertEqual(['one', 'Two', 'three'], list(row))
@@ -183,6 +178,24 @@ class UnitTestTextTable(unittest.TestCase):
         function=lambda row: row['a'] == '10')
     self.assertEqual(1, filtered_table.size)
 
+  def testDerivedTableHeadersAreIndependent(self):
+    operations = (
+        ('copy', copy.copy),
+        ('filter', lambda table: table.Filter()),
+        ('map', lambda table: table.Map(lambda row: row)),
+        ('add', lambda table: table + self.BasicTable()),
+    )
+    for name, operation in operations:
+      with self.subTest(operation=name):
+        original = self.BasicTable()
+        derived = operation(original)
+        derived.AddColumn('extra', default='value')
+        self.assertEqual(['a', 'b', 'c'], original.header.values)
+        self.assertEqual(['1', '2', '3'], original[1].values)
+        self.assertEqual(['a', 'b', 'c', 'extra'], derived.header.values)
+        original.AddColumn('original_only')
+        self.assertNotIn('original_only', derived.header)
+
   def testFilterNone(self):
     t = texttable.TextTable()
     t.header = ('a', 'b', 'c')
@@ -253,8 +266,8 @@ class UnitTestTextTable(unittest.TestCase):
 
   def testContains(self):
     t = self.BasicTable()
-    self.assertTrue('a' in t)
-    self.assertFalse('x' in t)
+    self.assertIn('a', t)
+    self.assertNotIn('x', t)
 
   def testIteration(self):
     t = self.BasicTable()
@@ -271,6 +284,7 @@ class UnitTestTextTable(unittest.TestCase):
 
     # Can we iterate repeatedly.
     index = 0
+    index2 = 0
     for r in t:
       index += 1
       self.assertEqual(r, t[index])
@@ -312,7 +326,7 @@ a,b, c, d  # Trim comment
 10, 11
 # More comments.
 """
-    f = StringIO(buf)
+    f = io.StringIO(buf)
     t = texttable.TextTable()
     self.assertEqual(2, t.CsvToTable(f))
     # pylint: disable=E1101
@@ -321,10 +335,40 @@ a,b, c, d  # Trim comment
     self.assertEqual(['5', '6', '7', '8'], t[2].values)
     self.assertEqual(2, t.size)
 
+  def testCsvToTableWithoutHeaderContent(self):
+    for content in ('', '\n \n', '# comment\n  # another comment\n'):
+      for buffer_class, value in (
+          (io.StringIO, content), (io.BytesIO, content.encode('utf-8'))):
+        with self.subTest(content=content, buffer=buffer_class):
+          table = self.BasicTable()
+          self.assertEqual(0, table.CsvToTable(buffer_class(value)))
+          self.assertEqual(0, table.size)
+          self.assertEqual([], list(table.header))
+
   def testHeaderIndex(self):
     t = self.BasicTable()
     self.assertEqual('c', t.header[2])
     self.assertEqual('a', t.header[0])
+
+  def testCsvWithoutHeaderPreservesFirstRow(self):
+    for source in ('1,2\n', '# comment\n1,2\n3,4\n'):
+      for buf in (io.StringIO(source), io.BytesIO(source.encode('utf-8'))):
+        with self.subTest(source=source, buffer_type=type(buf)):
+          t = texttable.TextTable()
+          t.CsvToTable(buf, header=False)
+          expected = [['1', '2']]
+          if '3,4' in source:
+            expected.append(['3', '4'])
+          self.assertEqual(expected, [row.values for row in t])
+          self.assertEqual([0, 1], t.header.values)
+          self.assertEqual(0, t.header.row)
+          self.assertEqual(list(range(1, t.size + 1)), [row.row for row in t])
+
+  def testCsvHeaderKeepsZeroRowIndex(self):
+    t = texttable.TextTable()
+    t.CsvToTable(io.StringIO('a,b\n1,2\n3,4\n'))
+    self.assertEqual(0, t.header.row)
+    self.assertEqual([1, 2], [row.row for row in t])
 
   def testAppend(self):
     t = self.BasicTable()
@@ -395,6 +439,18 @@ a,b, c, d  # Trim comment
     self.assertRaises(IndexError, t.AddColumn, 'x', col_index=6)
     self.assertRaises(IndexError, t.AddColumn, 'x', col_index=-7)
     self.assertRaises(texttable.TableError, t.AddColumn, 'b')
+
+  def testAddColumnChecksExactHeaderNames(self):
+    for column, col_index in [('name', -1), ('10', 0)]:
+      with self.subTest(column=column):
+        t = texttable.TextTable()
+        t.header = ['hostname']
+        t.Append(['10'])
+        t.AddColumn(column, default='new', col_index=col_index)
+        self.assertIn(column, t.header)
+        self.assertEqual('10', t[1]['hostname'])
+        self.assertEqual('new', t[1][column])
+        self.assertRaises(texttable.TableError, t.AddColumn, column)
 
   def testAddTable(self):
     t = self.BasicTable()
@@ -514,7 +570,7 @@ a,b, c, d  # Trim comment
         3, t._SmallestColSize('bbb ' + terminal.AnsiText('bb', ['red'])))
 
   def testFormattedTableColor(self):
-    # Test to sepcify the color defined in terminal.FG_COLOR_WORDS
+    # Test to specify the color defined in terminal.FG_COLOR_WORDS
     t = texttable.TextTable()
     t.header = ('LSP', 'Name')
     t.Append(('col1', 'col2'))

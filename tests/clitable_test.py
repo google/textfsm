@@ -16,19 +16,12 @@
 
 """Unittest for clitable script."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import copy
+import io
 import os
 import re
 import unittest
-
-from io import StringIO
 from textfsm import clitable
-from textfsm import copyable_regex_object
 
 
 class UnitTestIndexTable(unittest.TestCase):
@@ -47,8 +40,7 @@ class UnitTestIndexTable(unittest.TestCase):
 
     self.assertEqual(indx.compiled.size, 3)
     for col in ('Command', 'Vendor', 'Template', 'Hostname'):
-      self.assertTrue(isinstance(indx.compiled[1][col],
-                                 copyable_regex_object.CopyableRegexObject))
+      self.assertIsInstance(indx.compiled[1][col], re.Pattern)
 
     self.assertTrue(indx.compiled[1]['Hostname'].match('random string'))
 
@@ -66,8 +58,7 @@ class UnitTestIndexTable(unittest.TestCase):
     indx = clitable.IndexTable(_PreParse, _PreCompile, file_path)
     self.assertEqual(indx.index[2]['Template'], 'CLITABLE_TEMPLATEC')
     self.assertEqual(indx.index[1]['Command'], 'sh[[ow]] ve[[rsion]]')
-    self.assertTrue(isinstance(indx.compiled[1]['Hostname'],
-                               copyable_regex_object.CopyableRegexObject))
+    self.assertIsInstance(indx.compiled[1]['Hostname'], re.Pattern)
     self.assertFalse(indx.compiled[1]['Command'])
 
   def testGetRowMatch(self):
@@ -101,7 +92,7 @@ class UnitTestCliTable(unittest.TestCase):
                      'Start\n'
                      '  ^${Col1} ${Col2} ${Col3} -> Record\n'
                      '\n')
-    self.template_file = StringIO(self.template)
+    self.template_file = io.StringIO(self.template)
 
   def testCompletion(self):
     """Tests '[[]]' syntax replacement."""
@@ -123,7 +114,7 @@ class UnitTestCliTable(unittest.TestCase):
 
     self.assertEqual('sh(o(w)?)? ve(r(s(i(o(n)?)?)?)?)?',
                      self.clitable.index.index[1]['Command'])
-    self.assertEqual(None, self.clitable.index.compiled[1]['Template'])
+    self.assertIsNone(self.clitable.index.compiled[1]['Template'])
     self.assertTrue(
         self.clitable.index.compiled[1]['Command'].match('sho vers'))
 
@@ -267,7 +258,7 @@ class UnitTestCliTable(unittest.TestCase):
                      'Start\n'
                      '  ^${Col1} ${Col2} ${Col3} -> Record\n'
                      '\n')
-    self.template_file = StringIO(self.template)
+    self.template_file = io.StringIO(self.template)
     self.clitable._TemplateNamesToFiles = lambda t: [self.template_file]
     self.clitable.ParseCmd(self.input_data + input_data2,
                            attributes={'Command': 'sh ver'})
