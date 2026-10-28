@@ -370,7 +370,7 @@ class TextTable(object):
 
     new_table = self.__class__()
     # pylint: disable=protected-access
-    new_table._table = [self.header]
+    new_table._table = [copy.deepcopy(self.header)]
     for row in self[1:]:
       new_table.Append(row)
     return new_table
@@ -394,7 +394,7 @@ class TextTable(object):
 
     new_table = self.__class__()
     # pylint: disable=protected-access
-    new_table._table = [self.header]
+    new_table._table = [copy.deepcopy(self.header)]
     for row in self:
       if function(row):
         new_table.Append(row)
@@ -415,7 +415,7 @@ class TextTable(object):
     """
     new_table = self.__class__()
     # pylint: disable=protected-access
-    new_table._table = [self.header]
+    new_table._table = [copy.deepcopy(self.header)]
     for row in self:
       filtered_row = function(row)
       if filtered_row:
@@ -971,7 +971,7 @@ class TextTable(object):
     Raises:
       TableError: Column name already exists.
     """
-    if column in self.table:
+    if column in self.header:
       raise TableError('Column %r already in table.' % column)
     if col_index == -1:
       self._table[0][column] = column
@@ -1037,6 +1037,8 @@ class TextTable(object):
       line = buf.readline()
       header_str = ''
       while not header_str:
+        if not line:
+          return self.size
         if not isinstance(line, str):
           line = line.decode('utf-8')
         # Remove comments.
@@ -1072,16 +1074,14 @@ class TextTable(object):
       if not header:
         header_row = self.row_class()
         header_length = len(lst)
-        header_row.values = dict(
-            zip(range(header_length), range(header_length))
-        )
+        for index in range(header_length):
+          header_row[index] = index
+        header_row.row = 0
         self._table[0] = header_row
         header = True
-        continue
 
       new_row = self.NewRow()
       new_row.values = lst
-      header_row.row = self.size + 1
       self._table.append(new_row)
 
     return self.size

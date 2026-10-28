@@ -16,6 +16,7 @@
 
 """Unittest for text table."""
 
+import copy
 import io
 import unittest
 from textfsm import terminal
@@ -177,6 +178,24 @@ class UnitTestTextTable(unittest.TestCase):
         function=lambda row: row['a'] == '10')
     self.assertEqual(1, filtered_table.size)
 
+  def testDerivedTableHeadersAreIndependent(self):
+    operations = (
+        ('copy', copy.copy),
+        ('filter', lambda table: table.Filter()),
+        ('map', lambda table: table.Map(lambda row: row)),
+        ('add', lambda table: table + self.BasicTable()),
+    )
+    for name, operation in operations:
+      with self.subTest(operation=name):
+        original = self.BasicTable()
+        derived = operation(original)
+        derived.AddColumn('extra', default='value')
+        self.assertEqual(['a', 'b', 'c'], original.header.values)
+        self.assertEqual(['1', '2', '3'], original[1].values)
+        self.assertEqual(['a', 'b', 'c', 'extra'], derived.header.values)
+        original.AddColumn('original_only')
+        self.assertNotIn('original_only', derived.header)
+
   def testFilterNone(self):
     t = texttable.TextTable()
     t.header = ('a', 'b', 'c')
@@ -316,10 +335,40 @@ a,b, c, d  # Trim comment
     self.assertEqual(['5', '6', '7', '8'], t[2].values)
     self.assertEqual(2, t.size)
 
+  def testCsvToTableWithoutHeaderContent(self):
+    for content in ('', '\n \n', '# comment\n  # another comment\n'):
+      for buffer_class, value in (
+          (io.StringIO, content), (io.BytesIO, content.encode('utf-8'))):
+        with self.subTest(content=content, buffer=buffer_class):
+          table = self.BasicTable()
+          self.assertEqual(0, table.CsvToTable(buffer_class(value)))
+          self.assertEqual(0, table.size)
+          self.assertEqual([], list(table.header))
+
   def testHeaderIndex(self):
     t = self.BasicTable()
     self.assertEqual('c', t.header[2])
     self.assertEqual('a', t.header[0])
+
+  def testCsvWithoutHeaderPreservesFirstRow(self):
+    for source in ('1,2\n', '# comment\n1,2\n3,4\n'):
+      for buf in (io.StringIO(source), io.BytesIO(source.encode('utf-8'))):
+        with self.subTest(source=source, buffer_type=type(buf)):
+          t = texttable.TextTable()
+          t.CsvToTable(buf, header=False)
+          expected = [['1', '2']]
+          if '3,4' in source:
+            expected.append(['3', '4'])
+          self.assertEqual(expected, [row.values for row in t])
+          self.assertEqual([0, 1], t.header.values)
+          self.assertEqual(0, t.header.row)
+          self.assertEqual(list(range(1, t.size + 1)), [row.row for row in t])
+
+  def testCsvHeaderKeepsZeroRowIndex(self):
+    t = texttable.TextTable()
+    t.CsvToTable(io.StringIO('a,b\n1,2\n3,4\n'))
+    self.assertEqual(0, t.header.row)
+    self.assertEqual([1, 2], [row.row for row in t])
 
   def testAppend(self):
     t = self.BasicTable()
@@ -390,6 +439,18 @@ a,b, c, d  # Trim comment
     self.assertRaises(IndexError, t.AddColumn, 'x', col_index=6)
     self.assertRaises(IndexError, t.AddColumn, 'x', col_index=-7)
     self.assertRaises(texttable.TableError, t.AddColumn, 'b')
+
+  def testAddColumnChecksExactHeaderNames(self):
+    for column, col_index in [('name', -1), ('10', 0)]:
+      with self.subTest(column=column):
+        t = texttable.TextTable()
+        t.header = ['hostname']
+        t.Append(['10'])
+        t.AddColumn(column, default='new', col_index=col_index)
+        self.assertIn(column, t.header)
+        self.assertEqual('10', t[1]['hostname'])
+        self.assertEqual('new', t[1][column])
+        self.assertRaises(texttable.TableError, t.AddColumn, column)
 
   def testAddTable(self):
     t = self.BasicTable()
