@@ -23,6 +23,10 @@ output combinations and store the data in a TextTable.
 
 Is the glue between an automated command scraping program (such as RANCID) and
 the TextFSM output parser.
+
+The compiled-index cache stores ``IndexTable`` objects keyed by
+``(absolute_path, mtime_ns)`` so that a modification timestamp change
+invalidates the stale entry and triggers a fresh parse on the next call.
 """
 
 import copy
@@ -146,7 +150,6 @@ class IndexTable(object):
               and row[key]
               and not row[key].match(attributes[key])
           ):
-            # This line does not match, so break and try next row.
             raise StopIteration()
         return row.row
       except StopIteration:
@@ -171,8 +174,9 @@ class CliTable(texttable.TextTable):
   """
 
   # Parse each template index only once across all instances.
-  # Without this, the regexes are parsed at every call to CliTable().
-  _lock = threading.Lock()
+  # Cache key is (absolute_path, mtime_ns) for automatic invalidation.
+  # The constructor calls ReadIndex while already holding this lock.
+  _lock = threading.RLock()
   INDEX = {}
 
   def synchronised(func):
@@ -190,11 +194,12 @@ class CliTable(texttable.TextTable):
 
   @synchronised
   def __init__(self, index_file=None, template_dir=None):
-    """Create new CLiTable object.
+    """Create new CliTable object.
 
     Args:
       index_file: String, file where template/command mappings reside.
       template_dir: String, directory where index file and templates reside.
+
     """
     # pylint: disable=E1002
     super(CliTable, self).__init__()
@@ -205,8 +210,17 @@ class CliTable(texttable.TextTable):
     if index_file:
       self.ReadIndex(index_file)
 
+  # ---------------------------------------------------------------------------
+  # Index loading (mtime-aware cache)
+  # ---------------------------------------------------------------------------
+
+  @synchronised
   def ReadIndex(self, index_file=None):
     """Reads the IndexTable index file of commands and templates.
+
+    The parsed ``IndexTable`` is cached class-wide.  The cache key is
+    ``(absolute_path, mtime_ns)``; when the modification timestamp changes,
+    the stale entry is evicted and a fresh parse is performed automatically.
 
     Args:
       index_file: String, file where template/command mappings reside.
@@ -214,33 +228,68 @@ class CliTable(texttable.TextTable):
     Raises:
       CliTableError: A template column was not found in the table.
     """
-
     self.index_file = index_file or self.index_file
-    fullpath = os.path.join(self.template_dir, self.index_file)
-    if self.index_file and fullpath not in self.INDEX:
-      self.index = IndexTable(self._PreParse, self._PreCompile, fullpath)
-      self.INDEX[fullpath] = self.index
-    else:
-      self.index = self.INDEX[fullpath]
+    fullpath = os.path.abspath(
+        os.path.join(self.template_dir or '', self.index_file)
+    )
 
-    # Does the IndexTable have the right columns.
+    # Preserve sub-second timestamp precision for automatic invalidation.
+    try:
+      mtime_ns = os.stat(fullpath).st_mtime_ns
+    except OSError:
+      mtime_ns = 0
+    cache_key = (fullpath, mtime_ns)
+
+    if cache_key not in self.INDEX:
+      # Remove stale entries for the same path (old mtime).
+      stale = [k for k in list(self.INDEX) if k[0] == fullpath]
+      for k in stale:
+        del self.INDEX[k]
+
+      self.index = IndexTable(self._PreParse, self._PreCompile, fullpath)
+      self.INDEX[cache_key] = self.index
+    else:
+      self.index = self.INDEX[cache_key]
+
     if 'Template' not in self.index.index.header:  # pylint: disable=E1103
       raise CliTableError("Index file does not have 'Template' column.")
 
-  def _TemplateNamesToFiles(self, template_str):
-    """Parses a string of templates into a list of file handles."""
+  # ---------------------------------------------------------------------------
+  # Template file helpers
+  # ---------------------------------------------------------------------------
 
+  def _TemplateNamesToFiles(self, template_str):
+    """Parse a colon-separated string of template names into file handles.
+
+    Relative names are resolved against ``self.template_dir``. Index and
+    template files are considered trusted and may reside outside that directory.
+
+    Args:
+      template_str: str, colon-separated template file names.
+
+    Returns:
+      list of open file handle objects.
+
+    Raises:
+      IOError: If any template file cannot be opened.
+    """
     template_list = template_str.split(':')
     template_files = []
     try:
       for tmplt in template_list:
-        template_files.append(open(os.path.join(self.template_dir, tmplt), 'r'))
-    except:
-      for tmplt in template_files:
-        tmplt.close()
+        template_files.append(
+            open(os.path.join(self.template_dir or '', tmplt), 'r')
+        )
+    except Exception:
+      for fh in template_files:
+        fh.close()
       raise
 
     return template_files
+
+  # ---------------------------------------------------------------------------
+  # Parsing
+  # ---------------------------------------------------------------------------
 
   def ParseCmd(self, cmd_input, attributes=None, templates=None):
     """Creates a TextTable table of values from cmd_input string.
@@ -251,16 +300,14 @@ class CliTable(texttable.TextTable):
     Args:
       cmd_input: String, Device/command response.
       attributes: Dict, attribute that further refine matching template.
-      templates: String list of templates to parse with. If None, uses index
+      templates: String list of templates to parse with. If None, uses index.
 
     Raises:
       CliTableError: A template was not found for the given command.
     """
-    # Store raw command data within the object.
     self.raw = cmd_input
 
     if not templates:
-      # Find template in template index.
       row_idx = self.index.GetRowMatch(attributes)
       if row_idx:
         templates = self.index.index[row_idx]['Template']
@@ -272,12 +319,10 @@ class CliTable(texttable.TextTable):
     template_files = self._TemplateNamesToFiles(templates)
 
     try:
-      # Re-initialise the table.
       self.Reset()
       self._keys = set()
       self.table = self._ParseCmdItem(self.raw, template_file=template_files[0])
 
-      # Add additional columns from any additional tables.
       for tmplt in template_files[1:]:
         self.extend(
             self._ParseCmdItem(self.raw, template_file=tmplt), set(self._keys)
@@ -299,16 +344,13 @@ class CliTable(texttable.TextTable):
     Raises:
       CliTableError: A template was not found for the given command.
     """
-    # Build FSM machine from the template.
     fsm = textfsm.TextFSM(template_file)
     if not self._keys:
       self._keys = set(fsm.GetValuesByAttrib('Key'))
 
-    # Pass raw data through FSM.
     table = texttable.TextTable()
     table.header = fsm.header
 
-    # Fill TextTable from record entries.
     for record in fsm.ParseText(cmd_input):
       table.Append(record)
     return table
@@ -339,7 +381,6 @@ class CliTable(texttable.TextTable):
     Returns:
       String of the format '(a(b(c(d)?)?)?)?'.
     """
-    # Strip the outer '[[' & ']]' and replace with ()? regexp pattern.
     word = str(match.group())[2:-2]
     return '(' + ('(').join(word) + ')?' * len(word)
 
@@ -372,7 +413,6 @@ class CliTable(texttable.TextTable):
     Raises:
       KeyError: If any entry in list is not a valid header entry.
     """
-
     for keyname in key_list:
       if keyname not in self.header:
         raise KeyError("'%s'" % keyname)
@@ -392,11 +432,9 @@ class CliTable(texttable.TextTable):
     """Returns the super key value for the row."""
     if not row:
       if self._iterator:
-        # If we are inside an iterator use current row iteration.
         row = self[self._iterator]
       else:
         row = self.row
-    # If no superkey then use row number.
     if not self.superkey:
       return ['%s' % row.row]
 
