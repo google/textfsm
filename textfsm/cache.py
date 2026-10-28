@@ -16,7 +16,7 @@
 
 """Template cache for TextFSM.
 
-Provides a thread-safe cache that stores compiled TextFSM instances keyed by
+Provides a thread-safe cache that stores template text keyed by
 (absolute_path, mtime).  When the template file is modified on disk the cached
 entry is automatically invalidated and rebuilt on the next request, so callers
 never need to manage cache lifetime manually.
@@ -25,17 +25,17 @@ Typical usage::
 
     cache = TemplateCache()
 
-    # First call: compiles and caches the template.
+    # First call: reads and caches the template, then creates a fresh parser.
     fsm = cache.get('/path/to/template.fsm')
 
-    # Subsequent calls with the same unchanged file: returns the cached copy.
+    # Subsequent calls: creates a fresh parser from the cached template text.
     fsm = cache.get('/path/to/template.fsm')
 
-The cache is safe to share across threads.  A single global instance
-``_DEFAULT_CACHE`` is provided for convenience; it is used internally by
-CliTable so that repeated ``ParseCmd`` calls reuse compiled objects.
+The cache is safe to share across threads.  Each returned parser has independent
+state.  A single global instance ``_DEFAULT_CACHE`` is provided for convenience.
 """
 
+import io
 import os
 import threading
 import textfsm
@@ -46,7 +46,7 @@ class TemplateCacheError(Exception):
 
 
 class TemplateCache:
-  """Thread-safe cache of compiled TextFSM instances.
+  """Thread-safe cache of template text used to create fresh TextFSM instances.
 
   Entries are keyed by ``(absolute_path, mtime)`` where *mtime* is the
   integer modification-time reported by ``os.path.getmtime``.  Changing a
@@ -66,7 +66,7 @@ class TemplateCache:
       max_size: int or None, maximum number of cached templates.
     """
     self.max_size = max_size
-    # Maps (abs_path, mtime_int) -> TextFSM instance.
+    # Maps (abs_path, mtime_int) -> template text (str).
     self._cache = {}
     # Tracks insertion order for LRU-style eviction.
     self._order = []
@@ -77,11 +77,10 @@ class TemplateCache:
   # ------------------------------------------------------------------
 
   def get(self, path):
-    """Return a compiled TextFSM for *path*, using the cache when possible.
+    """Return a fresh TextFSM for *path*, using cached template text if present.
 
-    The returned object has already been initialised (``TextFSM.__init__``
-    completed) and its internal file pointer reset to the start, making it
-    safe to reuse across calls.
+    Each call creates an independent parser, so results, current state and
+    option values such as Filldown are never shared between callers.
 
     Args:
       path: str, filesystem path to a TextFSM template file.
@@ -91,7 +90,6 @@ class TemplateCache:
 
     Raises:
       TemplateCacheError: If *path* cannot be opened or compiled.
-      OSError: If *path* does not exist or is not readable.
     """
     abs_path = os.path.abspath(path)
     try:
@@ -105,11 +103,17 @@ class TemplateCache:
 
     with self._lock:
       if cache_key in self._cache:
-        return self._cache[cache_key]
+        return self._compile(abs_path, self._cache[cache_key])
 
-      # Compile the template outside the lock to avoid blocking other threads
-      # on slow I/O, but re-check under the lock afterwards.
-      fsm = self._compile(abs_path)
+      # Read and validate the template before adding its text to the cache.
+      try:
+        with open(abs_path, 'r') as fh:
+          template = fh.read()
+      except OSError as exc:
+        raise TemplateCacheError(
+            'Failed to read template %r: %s' % (abs_path, exc)
+        ) from exc
+      fsm = self._compile(abs_path, template)
 
       # Always evict stale entries for the same path (different mtime).
       stale = [k for k in self._order if k[0] == abs_path]
@@ -123,7 +127,7 @@ class TemplateCache:
           evict_key = self._order.pop(0)
           self._cache.pop(evict_key, None)
 
-      self._cache[cache_key] = fsm
+      self._cache[cache_key] = template
       self._order.append(cache_key)
       return fsm
 
@@ -154,22 +158,21 @@ class TemplateCache:
   # ------------------------------------------------------------------
 
   @staticmethod
-  def _compile(abs_path):
-    """Open *abs_path* and return a compiled TextFSM instance.
+  def _compile(abs_path, template):
+    """Create a fresh TextFSM from template text loaded from *abs_path*.
 
     Raises:
-      TemplateCacheError: On any I/O or parse error.
+      TemplateCacheError: On any template parse error.
     """
     try:
-      with open(abs_path, 'r') as fh:
-        return textfsm.TextFSM(fh)
-    except (OSError, textfsm.TextFSMTemplateError) as exc:
+      return textfsm.TextFSM(io.StringIO(template))
+    except textfsm.TextFSMTemplateError as exc:
       raise TemplateCacheError(
           'Failed to compile template %r: %s' % (abs_path, exc)
       ) from exc
 
 
 # ---------------------------------------------------------------------------
-# Module-level default instance used by CliTable.
+# Module-level default instance.
 # ---------------------------------------------------------------------------
 _DEFAULT_CACHE = TemplateCache()

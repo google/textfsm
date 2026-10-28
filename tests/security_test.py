@@ -27,6 +27,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 
 import textfsm
 from textfsm import cache as cache_module
@@ -72,12 +73,45 @@ class TestTemplateCache(unittest.TestCase):
     fsm = c.get(self.tmpl_path)
     self.assertIsInstance(fsm, textfsm.TextFSM)
 
-  def test_repeated_get_returns_same_object(self):
-    """Same file unchanged: second call must return the identical object."""
+  def test_repeated_get_returns_fresh_parsers(self):
+    """Reuse the cached template without sharing parser state or rereading it."""
     c = cache_module.TemplateCache()
     fsm1 = c.get(self.tmpl_path)
+    first_result = fsm1.ParseText('Hello device_a\n')
+    with mock.patch('builtins.open', side_effect=AssertionError('Cache miss')):
+      fsm2 = c.get(self.tmpl_path)
+    self.assertIsNot(fsm1, fsm2)
+    self.assertEqual(fsm2.ParseText('Hello device_b\n'), [['device_b']])
+    self.assertEqual(first_result, [['device_a']])
+
+  def test_filldown_values_are_not_shared(self):
+    _write_template(
+        self.tmpl_path,
+        'Value Filldown Host (\\S+)\n'
+        'Value Required Item (\\S+)\n'
+        '\n'
+        'Start\n'
+        '  ^Host ${Host}\n'
+        '  ^Item ${Item} -> Record\n',
+    )
+    c = cache_module.TemplateCache()
+    fsm1 = c.get(self.tmpl_path)
+    self.assertEqual(
+        fsm1.ParseText('Host device_a\nItem first\n'), [['device_a', 'first']]
+    )
     fsm2 = c.get(self.tmpl_path)
-    self.assertIs(fsm1, fsm2)
+    self.assertEqual(fsm2.ParseText('Item second\n'), [['', 'second']])
+
+  def test_list_values_are_not_shared(self):
+    _write_template(
+        self.tmpl_path, _SIMPLE_TEMPLATE.replace('Value Name', 'Value List Name')
+    )
+    c = cache_module.TemplateCache()
+    fsm1 = c.get(self.tmpl_path)
+    fsm1.ParseText('Hello device_a\n', eof=False)
+    fsm2 = c.get(self.tmpl_path)
+    self.assertEqual(fsm2.ParseText('Hello device_b\n'), [[['device_b']]])
+    self.assertEqual(fsm1.ParseText(''), [[['device_a']]])
 
   def test_cache_len_increases(self):
     c = cache_module.TemplateCache()
@@ -94,7 +128,9 @@ class TestTemplateCache(unittest.TestCase):
 
     # Force a detectable mtime change (sleep just long enough).
     time.sleep(0.05)
-    _write_template(self.tmpl_path, _SIMPLE_TEMPLATE + '\n')
+    _write_template(
+        self.tmpl_path, _SIMPLE_TEMPLATE.replace('Hello', 'Goodbye')
+    )
 
     # Manually bump mtime if filesystem resolution is coarse.
     new_mtime = os.path.getmtime(self.tmpl_path) + 1
@@ -102,6 +138,8 @@ class TestTemplateCache(unittest.TestCase):
 
     fsm2 = c.get(self.tmpl_path)
     self.assertIsNot(fsm1, fsm2)
+    self.assertEqual(fsm1.ParseText('Hello old\n'), [['old']])
+    self.assertEqual(fsm2.ParseText('Goodbye new\n'), [['new']])
     # Old entry evicted – cache should still contain exactly 1 entry.
     self.assertEqual(len(c), 1)
 
@@ -149,24 +187,30 @@ class TestTemplateCache(unittest.TestCase):
 
   # --- thread safety ---
 
-  def test_concurrent_get_same_file(self):
-    """Multiple threads calling get() concurrently must not raise."""
+  def test_concurrent_get_and_parse_same_file(self):
+    """Each thread parses its own input with independent parser state."""
     c = cache_module.TemplateCache()
     errors = []
+    results = [None] * 20
+    ready = threading.Barrier(20)
 
-    def worker():
+    def worker(i):
       try:
-        c.get(self.tmpl_path)
+        fsm = c.get(self.tmpl_path)
+        ready.wait(timeout=5)
+        results[i] = fsm.ParseText('Hello device_%d\n' % i)
       except Exception as exc:  # pylint: disable=broad-except
         errors.append(exc)
 
-    threads = [threading.Thread(target=worker) for _ in range(20)]
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(20)]
     for t in threads:
       t.start()
     for t in threads:
       t.join()
 
     self.assertEqual(errors, [])
+    for i, result in enumerate(results):
+      self.assertEqual(result, [['device_%d' % i]])
 
   # --- missing file ---
 
