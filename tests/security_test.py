@@ -306,6 +306,68 @@ class TestMtimeCache(unittest.TestCase):
     self.assertEqual(ct2.index.index[1]['Template'], 'next.fsm')
     self.assertEqual(len(clitable.CliTable.INDEX), 1)
 
+  def test_concurrent_read_index_refresh(self):
+    """Concurrent direct reloads must share one refreshed index without errors."""
+    clitable.CliTable.INDEX = {}
+    original = clitable.CliTable('index', self.tmpdir)
+    tables = [clitable.CliTable(template_dir=self.tmpdir) for _ in range(2)]
+    mtime_ns = os.stat(self.idx_path).st_mtime_ns + 2_000_000_000
+    with open(self.idx_path, 'w') as fh:
+      fh.write('Template, Command\nnext.fsm, show version\n')
+    os.utime(self.idx_path, ns=(mtime_ns, mtime_ns))
+
+    deleting = threading.Event()
+    second_started = threading.Event()
+    errors = []
+    real_lock = clitable.CliTable._lock
+
+    def acquire():
+      if deleting.is_set():
+        second_started.set()
+      return real_lock.acquire()
+
+    observed_lock = mock.Mock(wraps=real_lock)
+    observed_lock.acquire.side_effect = acquire
+
+    class PausingIndex(dict):
+
+      def __delitem__(self, key):
+        if deleting.is_set():
+          # Without synchronization both reloads reach stale-entry deletion.
+          second_started.set()
+        else:
+          deleting.set()
+          # With synchronization the second reload reaches lock acquisition.
+          if not second_started.wait(timeout=5):
+            raise RuntimeError('Second index reload did not start.')
+        super().__delitem__(key)
+
+    def reload(table):
+      try:
+        table.ReadIndex('index')
+      except Exception as exc:  # pylint: disable=broad-except
+        errors.append(exc)
+
+    index = PausingIndex(clitable.CliTable.INDEX)
+    with mock.patch.object(clitable.CliTable, 'INDEX', index), mock.patch.object(
+        clitable.CliTable, '_lock', observed_lock
+    ):
+      threads = [threading.Thread(target=reload, args=(ct,), daemon=True)
+                 for ct in tables]
+      threads[0].start()
+      first_started = deleting.wait(timeout=5)
+      threads[1].start()
+      for thread in threads:
+        thread.join(timeout=5)
+
+      self.assertTrue(first_started)
+      self.assertTrue(all(not thread.is_alive() for thread in threads))
+      self.assertEqual(errors, [])
+      self.assertIs(tables[0].index, tables[1].index)
+      self.assertIsNot(tables[0].index, original.index)
+      self.assertEqual(tables[0].index.index[1]['Template'], 'next.fsm')
+      self.assertEqual(len(index), 1)
+
 
 # ---------------------------------------------------------------------------
 # 3.  ReDoS mitigation: max_input_len in ParseText / ParseTextToDicts

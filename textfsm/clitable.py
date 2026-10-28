@@ -175,7 +175,8 @@ class CliTable(texttable.TextTable):
 
   # Parse each template index only once across all instances.
   # Cache key is (absolute_path, mtime_ns) for automatic invalidation.
-  _lock = threading.Lock()
+  # The constructor calls ReadIndex while already holding this lock.
+  _lock = threading.RLock()
   INDEX = {}
 
   def synchronised(func):
@@ -213,6 +214,7 @@ class CliTable(texttable.TextTable):
   # Index loading (mtime-aware cache)
   # ---------------------------------------------------------------------------
 
+  @synchronised
   def ReadIndex(self, index_file=None):
     """Reads the IndexTable index file of commands and templates.
 
