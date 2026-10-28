@@ -148,6 +148,31 @@ class TestTemplateCache(unittest.TestCase):
 
   # --- max_size eviction ---
 
+  def test_zero_max_size_does_not_cache(self):
+    """Zero capacity reloads file contents even when its timestamp is unchanged."""
+    c = cache_module.TemplateCache(max_size=0)
+    fsm1 = c.get(self.tmpl_path)
+    self.assertEqual(fsm1.ParseText('Hello old\n'), [['old']])
+    self.assertEqual(len(c), 0)
+
+    mtime_ns = os.stat(self.tmpl_path).st_mtime_ns
+    _write_template(
+        self.tmpl_path, _SIMPLE_TEMPLATE.replace('Hello', 'Goodbye')
+    )
+    os.utime(self.tmpl_path, ns=(mtime_ns, mtime_ns))
+    fsm2 = c.get(self.tmpl_path)
+    self.assertIsNot(fsm1, fsm2)
+    self.assertEqual(fsm2.ParseText('Goodbye new\n'), [['new']])
+    self.assertEqual(len(c), 0)
+
+  def test_changing_max_size_to_zero_clears_cache(self):
+    c = cache_module.TemplateCache(max_size=1)
+    c.get(self.tmpl_path)
+    self.assertEqual(len(c), 1)
+    c.max_size = 0
+    c.get(self.tmpl_path)
+    self.assertEqual(len(c), 0)
+
   def test_max_size_eviction(self):
     paths = []
     for i in range(3):

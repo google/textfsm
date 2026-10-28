@@ -56,14 +56,15 @@ class TemplateCache:
   Attributes:
     max_size: int, maximum number of entries to keep.  When the limit is
       reached the oldest entry (by insertion order) is evicted.  ``None``
-      means unlimited.
+      means unlimited; ``0`` disables caching.
   """
 
   def __init__(self, max_size=None):
     """Initialise a new TemplateCache.
 
     Args:
-      max_size: int or None, maximum number of cached templates.
+      max_size: int or None, maximum number of cached templates. Zero disables
+        caching; None means unlimited.
     """
     self.max_size = max_size
     # Maps (abs_path, mtime_ns) -> template text (str).
@@ -102,7 +103,7 @@ class TemplateCache:
     cache_key = (abs_path, mtime_ns)
 
     with self._lock:
-      if cache_key in self._cache:
+      if self.max_size != 0 and cache_key in self._cache:
         return self._compile(abs_path, self._cache[cache_key])
 
       # Read and validate the template before adding its text to the cache.
@@ -127,8 +128,9 @@ class TemplateCache:
           evict_key = self._order.pop(0)
           self._cache.pop(evict_key, None)
 
-      self._cache[cache_key] = template
-      self._order.append(cache_key)
+      if self.max_size != 0:
+        self._cache[cache_key] = template
+        self._order.append(cache_key)
       return fsm
 
   def invalidate(self, path=None):
