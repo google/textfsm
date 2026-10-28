@@ -958,7 +958,11 @@ class TextFSM(object):
     Returns:
       List of dicts.
     """
-    result_lists = self.ParseText(text, eof, max_input_len=max_input_len)
+    if max_input_len is None:
+      # Preserve compatibility with overrides using the original signature.
+      result_lists = self.ParseText(text, eof)
+    else:
+      result_lists = self.ParseText(text, eof, max_input_len=max_input_len)
     result_dicts = []
 
     for row in result_lists:

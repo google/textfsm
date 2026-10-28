@@ -351,6 +351,26 @@ class TestMaxInputLen(unittest.TestCase):
 
   # --- ParseTextToDicts ---
 
+  def test_parse_text_to_dicts_with_legacy_parse_text_override(self):
+    """An omitted or None limit preserves the original ParseText signature."""
+    class LegacyParser(textfsm.TextFSM):
+
+      def ParseText(self, text, eof=True):
+        self.last_eof = eof
+        return super().ParseText(text, eof)
+
+    for kwargs in ({}, {'max_input_len': None}):
+      with self.subTest(kwargs=kwargs):
+        fsm = LegacyParser(io.StringIO(_FSM_TEMPLATE))
+        self.assertEqual(
+            fsm.ParseTextToDicts('hostname router1\n', eof=False, **kwargs), []
+        )
+        self.assertFalse(fsm.last_eof)
+        self.assertEqual(
+            fsm.ParseTextToDicts('', **kwargs), [{'Hostname': 'router1'}]
+        )
+        self.assertTrue(fsm.last_eof)
+
   def test_parse_text_to_dicts_within_limit(self):
     fsm = self._make_fsm()
     text = 'hostname router1\n'
