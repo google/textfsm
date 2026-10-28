@@ -14,10 +14,10 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-"""Tests covering the three security/robustness improvements:
+"""Tests covering caching, trusted file paths and input length limits:
 
   1. TemplateCache  – mtime-keyed template caching (cache.py)
-  2. Path-traversal hardening  – _ValidatePath in CliTable (clitable.py)
+  2. Trusted template and index paths in CliTable (clitable.py)
   3. ReDoS mitigation  – max_input_len in ParseText / ParseTextToDicts (parser.py)
 """
 
@@ -221,58 +221,44 @@ class TestTemplateCache(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 2.  Path-traversal hardening tests  (CliTable._ValidatePath)
+# 2.  Trusted template and index paths
 # ---------------------------------------------------------------------------
 
-class TestValidatePath(unittest.TestCase):
-  """Tests for CliTable._ValidatePath."""
+class TestTemplatePaths(unittest.TestCase):
+  """Trusted index and template files may reside outside template_dir."""
 
   def setUp(self):
-    self.tmpdir = tempfile.mkdtemp()
-    # Minimal CliTable without an index so we can call _ValidatePath directly.
+    tmpdir = tempfile.TemporaryDirectory()
+    self.addCleanup(tmpdir.cleanup)
     clitable.CliTable.INDEX = {}
-    self.ct = clitable.CliTable(template_dir=self.tmpdir)
+    self.addCleanup(clitable.CliTable.INDEX.clear)
+    self.template_dir = os.path.join(tmpdir.name, 'templates')
+    os.mkdir(self.template_dir)
+    self.template_path = os.path.join(tmpdir.name, 'shared.fsm')
+    _write_template(self.template_path)
+    self.index_path = os.path.join(tmpdir.name, 'index')
+    with open(self.index_path, 'w') as fh:
+      fh.write('Template, Command\n../shared.fsm, show version\n')
 
-  def test_path_within_root_is_allowed(self):
-    safe = os.path.join(self.tmpdir, 'template.fsm')
-    result = self.ct._ValidatePath(safe)
-    self.assertEqual(result, os.path.normpath(os.path.abspath(safe)))
+  def test_parent_relative_index_and_template(self):
+    ct = clitable.CliTable('../index', self.template_dir)
+    ct.ParseCmd(_SIMPLE_INPUT, attributes={'Command': 'show version'})
+    self.assertEqual(ct[1]['Name'], 'world')
 
-  def test_traversal_with_dotdot_raises(self):
-    evil = os.path.join(self.tmpdir, '..', 'etc', 'passwd')
-    with self.assertRaises(clitable.CliTableError):
-      self.ct._ValidatePath(evil)
+  def test_absolute_index_outside_template_dir(self):
+    ct = clitable.CliTable(self.index_path, self.template_dir)
+    ct.ParseCmd(_SIMPLE_INPUT, attributes={'Command': 'show version'})
+    self.assertEqual(ct[1]['Name'], 'world')
 
-  def test_absolute_path_outside_root_raises(self):
-    with self.assertRaises(clitable.CliTableError):
-      self.ct._ValidatePath('/etc/shadow')
+  def test_absolute_template_outside_template_dir(self):
+    ct = clitable.CliTable(template_dir=self.template_dir)
+    ct.ParseCmd(_SIMPLE_INPUT, templates=self.template_path)
+    self.assertEqual(ct[1]['Name'], 'world')
 
-  def test_no_template_dir_allows_any_path(self):
-    """With template_dir=None the check is skipped (backwards-compatible)."""
-    clitable.CliTable.INDEX = {}
-    ct = clitable.CliTable(template_dir=None)
-    # Should not raise even for a path outside any sandbox.
-    result = ct._ValidatePath('/tmp/something.fsm')
-    self.assertEqual(result, '/tmp/something.fsm')
-
-  def test_traversal_in_template_names_to_files(self):
-    """_TemplateNamesToFiles must reject traversal in template names."""
-    # Write a real index so the object is fully constructed.
-    idx_path = os.path.join(self.tmpdir, 'index')
-    with open(idx_path, 'w') as fh:
-      fh.write('Template, Command\n')
-      fh.write('tmpl.fsm, show version\n')
-    clitable.CliTable.INDEX = {}
-    ct = clitable.CliTable('index', self.tmpdir)
-    with self.assertRaises(clitable.CliTableError):
-      ct._TemplateNamesToFiles('../../etc/passwd')
-
-  def test_read_index_traversal_raises(self):
-    """ReadIndex must reject an index_file that escapes template_dir."""
-    clitable.CliTable.INDEX = {}
-    ct = clitable.CliTable(template_dir=self.tmpdir)
-    with self.assertRaises(clitable.CliTableError):
-      ct.ReadIndex('../../etc/passwd')
+  def test_absolute_paths_without_template_dir(self):
+    ct = clitable.CliTable(index_file=self.index_path)
+    ct.ParseCmd(_SIMPLE_INPUT, templates=self.template_path)
+    self.assertEqual(ct[1]['Name'], 'world')
 
 
 class TestMtimeCache(unittest.TestCase):

@@ -24,13 +24,6 @@ output combinations and store the data in a TextTable.
 Is the glue between an automated command scraping program (such as RANCID) and
 the TextFSM output parser.
 
-Security notes
---------------
-All file paths derived from *index_file* and *template_dir* are validated
-against the resolved ``template_dir`` root before any file is opened.  Paths
-that would escape the root (e.g. ``../../etc/passwd``) are rejected with a
-``CliTableError``.  See ``_ValidatePath`` for details.
-
 The compiled-index cache stores ``IndexTable`` objects keyed by
 ``(absolute_path, mtime_int)`` so that a file change on disk automatically
 invalidates the stale entry and triggers a fresh parse on the next call.
@@ -206,8 +199,6 @@ class CliTable(texttable.TextTable):
       index_file: String, file where template/command mappings reside.
       template_dir: String, directory where index file and templates reside.
 
-    Raises:
-      CliTableError: If *index_file* escapes the *template_dir* root.
     """
     # pylint: disable=E1002
     super(CliTable, self).__init__()
@@ -217,46 +208,6 @@ class CliTable(texttable.TextTable):
     self.template_dir = template_dir
     if index_file:
       self.ReadIndex(index_file)
-
-  # ---------------------------------------------------------------------------
-  # Path-traversal protection
-  # ---------------------------------------------------------------------------
-
-  def _ValidatePath(self, path):
-    """Return the absolute, normalised form of *path*, raising on traversal.
-
-    Resolves *path* to an absolute path and checks that the result starts with
-    the resolved ``template_dir`` root (when set).  This prevents callers from
-    supplying path components like ``../../etc/passwd`` that would otherwise
-    escape the intended directory.
-
-    The check is skipped when ``self.template_dir`` is ``None``, preserving
-    backwards-compatible behaviour for callers that pass fully-qualified paths
-    directly.
-
-    Args:
-      path: str, relative or absolute filesystem path to validate.
-
-    Returns:
-      str, the absolute normalised path.
-
-    Raises:
-      CliTableError: If the resolved path escapes the *template_dir* root.
-    """
-    abs_path = os.path.normpath(os.path.abspath(path))
-
-    if self.template_dir is not None:
-      allowed_root = os.path.normpath(os.path.abspath(self.template_dir))
-      # Require the path to equal allowed_root or be nested inside it.
-      if abs_path != allowed_root and not abs_path.startswith(
-          allowed_root + os.sep
-      ):
-        raise CliTableError(
-            'Path %r escapes the allowed template directory %r.'
-            % (path, allowed_root)
-        )
-
-    return abs_path
 
   # ---------------------------------------------------------------------------
   # Index loading (mtime-aware cache)
@@ -273,12 +224,12 @@ class CliTable(texttable.TextTable):
       index_file: String, file where template/command mappings reside.
 
     Raises:
-      CliTableError: A template column was not found, or the resolved path
-        escapes *template_dir*.
+      CliTableError: A template column was not found in the table.
     """
     self.index_file = index_file or self.index_file
-    raw_fullpath = os.path.join(self.template_dir or '', self.index_file)
-    fullpath = self._ValidatePath(raw_fullpath)
+    fullpath = os.path.abspath(
+        os.path.join(self.template_dir or '', self.index_file)
+    )
 
     # Include mtime in the cache key so on-disk changes auto-invalidate.
     try:
@@ -308,9 +259,8 @@ class CliTable(texttable.TextTable):
   def _TemplateNamesToFiles(self, template_str):
     """Parse a colon-separated string of template names into file handles.
 
-    Each name is resolved relative to ``self.template_dir`` and validated via
-    ``_ValidatePath`` before opening, ensuring no name can escape the allowed
-    root directory.
+    Relative names are resolved against ``self.template_dir``. Index and
+    template files are considered trusted and may reside outside that directory.
 
     Args:
       template_str: str, colon-separated template file names.
@@ -319,16 +269,15 @@ class CliTable(texttable.TextTable):
       list of open file handle objects.
 
     Raises:
-      CliTableError: If any resolved path escapes *template_dir*.
       IOError: If any template file cannot be opened.
     """
     template_list = template_str.split(':')
     template_files = []
     try:
       for tmplt in template_list:
-        raw_path = os.path.join(self.template_dir or '', tmplt)
-        safe_path = self._ValidatePath(raw_path)
-        template_files.append(open(safe_path, 'r'))
+        template_files.append(
+            open(os.path.join(self.template_dir or '', tmplt), 'r')
+        )
     except Exception:
       for fh in template_files:
         fh.close()
