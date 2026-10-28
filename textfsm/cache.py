@@ -17,8 +17,8 @@
 """Template cache for TextFSM.
 
 Provides a thread-safe cache that stores template text keyed by
-(absolute_path, mtime).  When the template file is modified on disk the cached
-entry is automatically invalidated and rebuilt on the next request, so callers
+(absolute_path, mtime_ns).  When the template's modification timestamp changes
+the cached entry is invalidated and rebuilt on the next request, so callers
 never need to manage cache lifetime manually.
 
 Typical usage::
@@ -48,10 +48,10 @@ class TemplateCacheError(Exception):
 class TemplateCache:
   """Thread-safe cache of template text used to create fresh TextFSM instances.
 
-  Entries are keyed by ``(absolute_path, mtime)`` where *mtime* is the
-  integer modification-time reported by ``os.path.getmtime``.  Changing a
-  template file on disk therefore automatically invalidates the stale entry
-  without requiring any explicit cache-busting calls.
+  Entries are keyed by ``(absolute_path, mtime_ns)`` using the modification
+  timestamp from ``os.stat(...).st_mtime_ns``.  A changed timestamp invalidates
+  the stale entry without requiring explicit cache-busting calls.  The actual
+  timestamp precision depends on the filesystem.
 
   Attributes:
     max_size: int, maximum number of entries to keep.  When the limit is
@@ -66,7 +66,7 @@ class TemplateCache:
       max_size: int or None, maximum number of cached templates.
     """
     self.max_size = max_size
-    # Maps (abs_path, mtime_int) -> template text (str).
+    # Maps (abs_path, mtime_ns) -> template text (str).
     self._cache = {}
     # Tracks insertion order for LRU-style eviction.
     self._order = []
@@ -93,13 +93,13 @@ class TemplateCache:
     """
     abs_path = os.path.abspath(path)
     try:
-      mtime = int(os.path.getmtime(abs_path))
+      mtime_ns = os.stat(abs_path).st_mtime_ns
     except OSError as exc:
       raise TemplateCacheError(
           'Cannot stat template file %r: %s' % (abs_path, exc)
       ) from exc
 
-    cache_key = (abs_path, mtime)
+    cache_key = (abs_path, mtime_ns)
 
     with self._lock:
       if cache_key in self._cache:

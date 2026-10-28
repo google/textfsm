@@ -25,7 +25,6 @@ import io
 import os
 import tempfile
 import threading
-import time
 import unittest
 from unittest import mock
 
@@ -122,19 +121,23 @@ class TestTemplateCache(unittest.TestCase):
   # --- mtime invalidation ---
 
   def test_mtime_change_invalidates_cache(self):
-    """After the template file is rewritten the cache must return a fresh FSM."""
+    """A template update within the same second must refresh cached text."""
+    first_mtime_ns = 1_700_000_000_100_000_000
+    os.utime(self.tmpl_path, ns=(first_mtime_ns, first_mtime_ns))
+    old_mtime_ns = os.stat(self.tmpl_path).st_mtime_ns
     c = cache_module.TemplateCache()
     fsm1 = c.get(self.tmpl_path)
 
-    # Force a detectable mtime change (sleep just long enough).
-    time.sleep(0.05)
     _write_template(
         self.tmpl_path, _SIMPLE_TEMPLATE.replace('Hello', 'Goodbye')
     )
-
-    # Manually bump mtime if filesystem resolution is coarse.
-    new_mtime = os.path.getmtime(self.tmpl_path) + 1
-    os.utime(self.tmpl_path, (new_mtime, new_mtime))
+    next_mtime_ns = first_mtime_ns + 800_000_000
+    os.utime(self.tmpl_path, ns=(next_mtime_ns, next_mtime_ns))
+    new_mtime_ns = os.stat(self.tmpl_path).st_mtime_ns
+    if old_mtime_ns == new_mtime_ns:
+      self.skipTest('Filesystem does not support sub-second modification times.')
+    self.assertEqual(old_mtime_ns // 1_000_000_000,
+                     new_mtime_ns // 1_000_000_000)
 
     fsm2 = c.get(self.tmpl_path)
     self.assertIsNot(fsm1, fsm2)
@@ -281,16 +284,27 @@ class TestMtimeCache(unittest.TestCase):
     self.assertEqual(len(clitable.CliTable.INDEX), 1)
 
   def test_cache_miss_after_mtime_change(self):
+    """A same-second index update must refresh without manually clearing it."""
     clitable.CliTable.INDEX = {}
-    clitable.CliTable('index', self.tmpdir)
-    # Simulate file being updated.
-    new_mtime = os.path.getmtime(self.idx_path) + 2
-    os.utime(self.idx_path, (new_mtime, new_mtime))
-    # Re-read: must detect the new mtime and reparse.
-    clitable.CliTable.INDEX = {}  # clear to simulate fresh process restart
+    first_mtime_ns = 1_700_000_000_100_000_000
+    os.utime(self.idx_path, ns=(first_mtime_ns, first_mtime_ns))
+    old_mtime_ns = os.stat(self.idx_path).st_mtime_ns
+    ct1 = clitable.CliTable('index', self.tmpdir)
+    with open(self.idx_path, 'w') as fh:
+      fh.write('Template, Command\nnext.fsm, show version\n')
+    next_mtime_ns = first_mtime_ns + 800_000_000
+    os.utime(self.idx_path, ns=(next_mtime_ns, next_mtime_ns))
+    new_mtime_ns = os.stat(self.idx_path).st_mtime_ns
+    if old_mtime_ns == new_mtime_ns:
+      self.skipTest('Filesystem does not support sub-second modification times.')
+    self.assertEqual(old_mtime_ns // 1_000_000_000,
+                     new_mtime_ns // 1_000_000_000)
+
     ct2 = clitable.CliTable('index', self.tmpdir)
-    # Just verify we can read it without error; index is a fresh object.
-    self.assertIsNotNone(ct2.index)
+    self.assertIsNot(ct1.index, ct2.index)
+    self.assertEqual(ct1.index.index[1]['Template'], 'tmpl.fsm')
+    self.assertEqual(ct2.index.index[1]['Template'], 'next.fsm')
+    self.assertEqual(len(clitable.CliTable.INDEX), 1)
 
 
 # ---------------------------------------------------------------------------

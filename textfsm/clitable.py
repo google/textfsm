@@ -25,7 +25,7 @@ Is the glue between an automated command scraping program (such as RANCID) and
 the TextFSM output parser.
 
 The compiled-index cache stores ``IndexTable`` objects keyed by
-``(absolute_path, mtime_int)`` so that a file change on disk automatically
+``(absolute_path, mtime_ns)`` so that a modification timestamp change
 invalidates the stale entry and triggers a fresh parse on the next call.
 """
 
@@ -174,7 +174,7 @@ class CliTable(texttable.TextTable):
   """
 
   # Parse each template index only once across all instances.
-  # Cache key is (absolute_path, mtime_int) for automatic invalidation.
+  # Cache key is (absolute_path, mtime_ns) for automatic invalidation.
   _lock = threading.Lock()
   INDEX = {}
 
@@ -217,8 +217,8 @@ class CliTable(texttable.TextTable):
     """Reads the IndexTable index file of commands and templates.
 
     The parsed ``IndexTable`` is cached class-wide.  The cache key is
-    ``(absolute_path, mtime_int)``; when the file changes on disk the stale
-    entry is evicted and a fresh parse is performed automatically.
+    ``(absolute_path, mtime_ns)``; when the modification timestamp changes,
+    the stale entry is evicted and a fresh parse is performed automatically.
 
     Args:
       index_file: String, file where template/command mappings reside.
@@ -231,12 +231,12 @@ class CliTable(texttable.TextTable):
         os.path.join(self.template_dir or '', self.index_file)
     )
 
-    # Include mtime in the cache key so on-disk changes auto-invalidate.
+    # Preserve sub-second timestamp precision for automatic invalidation.
     try:
-      mtime = int(os.path.getmtime(fullpath))
+      mtime_ns = os.stat(fullpath).st_mtime_ns
     except OSError:
-      mtime = 0
-    cache_key = (fullpath, mtime)
+      mtime_ns = 0
+    cache_key = (fullpath, mtime_ns)
 
     if cache_key not in self.INDEX:
       # Remove stale entries for the same path (old mtime).
