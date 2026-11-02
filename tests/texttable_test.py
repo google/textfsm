@@ -569,6 +569,27 @@ a,b, c, d  # Trim comment
     self.assertEqual(
         3, t._SmallestColSize('bbb ' + terminal.AnsiText('bb', ['red'])))
 
+  def testSmallestColSizeWithoutVisibleWords(self):
+    t = texttable.TextTable()
+    for value in (' ', '\t', '\n', '\r\n', ' \t\n ',
+                  terminal.AnsiText('', ['red']),
+                  terminal.AnsiText(' \t ', ['red'])):
+      with self.subTest(value=value):
+        self.assertEqual(0, t._SmallestColSize(value))
+
+  def testFormattedTableWhitespaceCells(self):
+    for value in (' ', '\t', '\n', '\r\n', ' \t\n '):
+      with self.subTest(value=value):
+        t = texttable.TextTable()
+        t.header = ('name', 'note')
+        t.Append(('router', value))
+        t.Append(('switch', 'online'))
+        rendered = t.FormattedTable()
+        self.assertIn('router', rendered)
+        self.assertIn('switch', rendered)
+        self.assertIn('online', rendered)
+        self.assertEqual(['router', value], t[1].values)
+
   def testFormattedTableColor(self):
     # Test to specify the color defined in terminal.FG_COLOR_WORDS
     t = texttable.TextTable()

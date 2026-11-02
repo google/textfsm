@@ -632,7 +632,7 @@ class TextTable(object):
     if not text:
       return 0
     stripped = terminal.StripAnsiText(text)
-    return max(len(word) for word in stripped.split())
+    return max((len(word) for word in stripped.split()), default=0)
 
   def _TextJustify(self, text, col_size):
     """Formats text within column with white space padding.
