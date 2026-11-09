@@ -92,7 +92,7 @@ class TemplateCache:
     Raises:
       TemplateCacheError: If *path* cannot be opened or compiled.
     """
-    abs_path = os.path.abspath(path)
+    abs_path = os.path.realpath(path)
     try:
       mtime_ns = os.stat(abs_path).st_mtime_ns
     except OSError as exc:
@@ -145,7 +145,7 @@ class TemplateCache:
         self._cache.clear()
         self._order.clear()
       else:
-        abs_path = os.path.abspath(path)
+        abs_path = os.path.realpath(path)
         stale = [k for k in list(self._cache) if k[0] == abs_path]
         for k in stale:
           del self._cache[k]
