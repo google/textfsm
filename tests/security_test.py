@@ -273,6 +273,19 @@ class TestTemplatePaths(unittest.TestCase):
     ct.ParseCmd(_SIMPLE_INPUT, attributes={'Command': 'show version'})
     self.assertEqual(ct[1]['Name'], 'world')
 
+  def test_parent_relative_index_through_symlink(self):
+    links_dir = os.path.join(os.path.dirname(self.template_dir), 'links')
+    os.mkdir(links_dir)
+    template_link = os.path.join(links_dir, 'templates')
+    try:
+      os.symlink(self.template_dir, template_link, target_is_directory=True)
+    except (OSError, NotImplementedError) as exc:
+      self.skipTest('Directory symlinks are unavailable: %s' % exc)
+
+    ct = clitable.CliTable('../index', template_link)
+    ct.ParseCmd(_SIMPLE_INPUT, attributes={'Command': 'show version'})
+    self.assertEqual(ct[1]['Name'], 'world')
+
   def test_absolute_index_outside_template_dir(self):
     ct = clitable.CliTable(self.index_path, self.template_dir)
     ct.ParseCmd(_SIMPLE_INPUT, attributes={'Command': 'show version'})

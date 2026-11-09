@@ -229,7 +229,7 @@ class CliTable(texttable.TextTable):
       CliTableError: A template column was not found in the table.
     """
     self.index_file = index_file or self.index_file
-    fullpath = os.path.abspath(
+    fullpath = os.path.realpath(
         os.path.join(self.template_dir or '', self.index_file)
     )
 
