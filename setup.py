@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2026 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import re
 # To use a consistent encoding
 from codecs import open
 from os import path
+from pathlib import Path
 from setuptools import find_packages, setup
 
-here = path.abspath(path.dirname(__file__))
-
+here = Path(__file__).resolve().parent
 init_py = (here / "textfsm" / "__init__.py").read_text(encoding="utf-8")
 match = re.search(r'^__version__\s*=\s*[\'"]([^\'"]+)[\'"]', init_py, re.M)
 if not match:
@@ -32,7 +32,7 @@ version = match.group(1)
 
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf8') as f:
-  long_description = f.read()
+    long_description = f.read()
 
 setup(
     name='textfsm',
@@ -54,7 +54,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Topic :: Software Development :: Libraries',
     ],
-    packages=['textfsm'],
+    packages=find_packages(),
     entry_points={'console_scripts': ['textfsm=textfsm.parser:main']},
     include_package_data=True,
     package_data={'textfsm': ['../testdata/*']},
