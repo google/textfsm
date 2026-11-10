@@ -16,6 +16,7 @@
 
 """Setup script."""
 
+import re
 # To use a consistent encoding
 from codecs import open
 from os import path
@@ -23,19 +24,21 @@ from setuptools import find_packages, setup
 
 here = path.abspath(path.dirname(__file__))
 
+init_py = (here / "textfsm" / "__init__.py").read_text(encoding="utf-8")
+match = re.search(r'^__version__\s*=\s*[\'"]([^\'"]+)[\'"]', init_py, re.M)
+if not match:
+    raise RuntimeError("Unable to find __version__")
+version = match.group(1)
+
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf8') as f:
   long_description = f.read()
-
-about = {}
-with open("textfsm/__init__.py", encoding="utf-8") as f:
-  exec(f.read(), about)
 
 setup(
     name='textfsm',
     maintainer='Google',
     maintainer_email='textfsm-dev@googlegroups.com',
-    version=about["__version__"])
+    version=version,
     description=(
         'Python module for parsing semi-structured text into python tables.'
     ),
