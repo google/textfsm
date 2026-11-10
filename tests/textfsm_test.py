@@ -75,6 +75,12 @@ class UnitTestFSM(unittest.TestCase):
         textfsm.TextFSMTemplateError, v.Parse, r'Value beer (boo)hoo\)'
     )
 
+    # A missing regex is a template error, not an IndexError.
+    v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
+    self.assertRaises(
+        textfsm.TextFSMTemplateError, v.Parse, 'Value Required beer'
+    )
+
     # Unbalanced parenthesis can exist if within square "[]" braces.
     v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
     v.Parse('Value beer (boo[(]hoo)')
@@ -263,6 +269,9 @@ class UnitTestFSM(unittest.TestCase):
     f = io.StringIO(buf)
     self.assertRaises(textfsm.TextFSMTemplateError, t._ParseFSMVariables, f)
     buf = 'Value filldown,Required Wine ((c|C)laret)'
+    f = io.StringIO(buf)
+    self.assertRaises(textfsm.TextFSMTemplateError, t._ParseFSMVariables, f)
+    buf = 'Value Required Beer'
     f = io.StringIO(buf)
     self.assertRaises(textfsm.TextFSMTemplateError, t._ParseFSMVariables, f)
 

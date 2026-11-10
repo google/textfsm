@@ -305,7 +305,12 @@ class TextFSMValue(object):
           "Invalid Value name '%s' or name too long." % self.name
       )
 
-    if self.regex[0] != '(' or self.regex[-1] != ')' or self.regex[-2] == '\\':
+    if (
+        not self.regex
+        or self.regex[0] != '('
+        or self.regex[-1] != ')'
+        or self.regex[-2] == '\\'
+    ):
       raise TextFSMTemplateError(
           "Value '%s' must be contained within a '()' pair." % self.regex
       )
