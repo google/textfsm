@@ -29,6 +29,7 @@ jobs:
       - name: Build release distributions
         run: |
           # NOTE: put your own distribution build steps here.
+          pip install setuptools
           python3 setup.py sdist
           python3 setup.py bdist_wheel
 
