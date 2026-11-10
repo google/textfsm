@@ -28,10 +28,8 @@ jobs:
 
       - name: Build release distributions
         run: |
-          # NOTE: put your own distribution build steps here.
-          python3 -m pip install --upgrade pip setuptools wheel
-          python3 setup.py sdist
-          python3 setup.py bdist_wheel
+          python3 -m pip install --upgrade build
+          python3 -m build
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
@@ -52,7 +50,7 @@ jobs:
     environment:
       name: pypi
       # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
-      url: https://test.pypi.org/p/textfsm
+      url: https://pypi.org/p/textfsm
       #
       # ALTERNATIVE: if your GitHub Release name is the PyPI project version string
       # ALTERNATIVE: exactly, uncomment the following line instead:
@@ -68,5 +66,4 @@ jobs:
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/
           packages-dir: dist/
