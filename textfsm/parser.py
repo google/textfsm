@@ -319,7 +319,11 @@ class TextFSMValue(object):
     except re.error as exc:
       raise TextFSMTemplateError(str(exc)) from exc
 
-    self.template = re.sub(r'^\(', '(?P<%s>' % self.name, self.regex)
+    # A callable replacement, so that the value name is not interpreted
+    # for backslash escapes (or group references) by re.sub().
+    self.template = re.sub(
+        r'^\(', lambda match: '(?P<%s>' % self.name, self.regex
+    )
 
     # Compile and store the regex object only on List-type values for use in
     # nested matching
