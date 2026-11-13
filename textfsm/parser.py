@@ -991,13 +991,19 @@ class TextFSM(object):
 
     If a record entry is a list then append, otherwise values are replaced.
 
+    A named group that did not participate in the match (e.g. the rule
+    matched via an alternation branch that does not contain the group)
+    leaves the value unchanged, rather than assigning None - which would
+    append None to List values and overwrite Filldown memory.
+
     Args:
       matched: (regexp.match) Named group for each matched value.
       value: (str) The matched value.
     """
     self._value = self._GetValue(value)
-    if self._value is not None:
-      self._value.AssignVar(matched.group(value))
+    matched_value = matched.group(value)
+    if self._value is not None and matched_value is not None:
+      self._value.AssignVar(matched_value)
 
   def _Operations(self, rule, line):
     """Operators on the data record.
