@@ -543,6 +543,16 @@ a,b, c, d  # Trim comment
         t.LabelValueTable(['c', 'a']))
     self.assertRaises(texttable.TableError, t.LabelValueTable, ['a', 'z'])
 
+  def testTableWithLabelsDefaultMultiCharHeader(self):
+    t = texttable.TextTable()
+    t.header = ('Interface', 'Status')
+    t.Append(('ge-0/0/0', 'up'))
+    t.Append(('ge-0/0/1', 'down'))
+    self.assertEqual(
+        '# LABEL Interface\nge-0/0/0.Status up\nge-0/0/1.Status down\n',
+        t.LabelValueTable())
+    self.assertEqual(t.LabelValueTable(['Interface']), t.LabelValueTable())
+
   def testTextJustify(self):
     t = texttable.TextTable()
     self.assertEqual([' a    '], t._TextJustify('a', 6))
