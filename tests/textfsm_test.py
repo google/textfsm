@@ -82,6 +82,17 @@ class UnitTestFSM(unittest.TestCase):
         textfsm.TextFSMTemplateError, v.Parse, 'Value Required beer'
     )
 
+    # A backslash in the value name is rejected at name-check time.
+    v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
+    self.assertRaises(
+        textfsm.TextFSMTemplateError, v.Parse, r'Value beer\ol1 (\S+)'
+    )
+
+    tplt = 'Value beer\\ol1 (\\S+)\n\nStart\n  ^$beer\\ol1x -> Next\n'
+    self.assertRaises(
+        textfsm.TextFSMTemplateError, textfsm.TextFSM, io.StringIO(tplt)
+    )
+
     # Unbalanced parenthesis can exist if within square "[]" braces.
     v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
     v.Parse('Value beer (boo[(]hoo)')
