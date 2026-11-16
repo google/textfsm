@@ -960,8 +960,10 @@ class TextFSM(object):
     for rule in self._cur_state:
       matched = self._CheckRule(rule, line)
       if matched:
-        for value in matched.groupdict():
-          self._AssignVar(matched, value)
+        for name, text in matched.groupdict().items():
+          if text is None:
+            continue  # Group not part of the matched branch.
+          self._AssignVar(matched, name)
 
         if self._Operations(rule, line):
           # Not a Continue so check for state transition.
@@ -990,6 +992,8 @@ class TextFSM(object):
     """Assigns variable into current record from a matched rule.
 
     If a record entry is a list then append, otherwise values are replaced.
+
+    Groups that did not participate in the match leave the value unchanged.
 
     Args:
       matched: (regexp.match) Named group for each matched value.

@@ -761,6 +761,58 @@ class UnitTestFSM(unittest.TestCase):
     result = t.ParseText(data)
     self.assertListEqual(result, [[['one'], 'two']])
 
+  def testAlternationWithoutValueGroup(self):
+    """A rule matching via a branch without the value group keeps the value.
+
+    Rules may contain alternations where the value's named group does not
+    participate in the matched branch. Assigning None in that case appends
+    None to List values and overwrites Filldown memory.
+    """
+
+    # List values do not accumulate None when the group does not match.
+    tplt = (
+        'Value List boo (on.)\n'
+        'Value hoo (tw.)\n\n'
+        'Start\n'
+        '  ^$boo\n'
+        '  ^$boo|zz -> Next.Record\n'
+    )
+
+    t = textfsm.TextFSM(io.StringIO(tplt))
+    result = t.ParseText('one\nzz')
+    self.assertListEqual(result, [[['one'], '']])
+
+    # An optional value group that did not participate leaves the
+    # value unchanged.
+    tplt = (
+        'Value boo (on.)\n'
+        'Value List hoo (tw.)\n\n'
+        'Start\n'
+        '  ^${boo}(${hoo})? -> Next.Record\n'
+    )
+
+    t = textfsm.TextFSM(io.StringIO(tplt))
+    result = t.ParseText('one\nonetwo')
+    self.assertListEqual(result, [['one', []], ['one', ['two']]])
+
+  def testFilldownAlternationWithoutValueGroup(self):
+    """Filldown memory is not wiped by a non-participating group."""
+
+    tplt = (
+        'Value Filldown boo (on.)\n'
+        'Value hoo (tw.)\n\n'
+        'Start\n'
+        '  ^$boo\n'
+        '  ^$boo|zz -> Next.Record\n'
+        '  ^$hoo -> Next.Record\n'
+    )
+
+    t = textfsm.TextFSM(io.StringIO(tplt))
+    result = t.ParseText('one\nzz\ntw2')
+    self.assertListEqual(
+        result, [['one', ''], ['one', 'tw2'], ['one', '']]
+    )
+
   def testNestedMatching(self):
     """List-type values with nested regex capture groups are parsed correctly.
 
