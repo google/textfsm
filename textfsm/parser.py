@@ -960,8 +960,10 @@ class TextFSM(object):
     for rule in self._cur_state:
       matched = self._CheckRule(rule, line)
       if matched:
-        for value in matched.groupdict():
-          self._AssignVar(matched, value)
+        for name, text in matched.groupdict().items():
+          if text is None:
+            continue  # Group not part of the matched branch.
+          self._AssignVar(matched, name)
 
         if self._Operations(rule, line):
           # Not a Continue so check for state transition.
@@ -991,19 +993,15 @@ class TextFSM(object):
 
     If a record entry is a list then append, otherwise values are replaced.
 
-    A named group that did not participate in the match (e.g. the rule
-    matched via an alternation branch that does not contain the group)
-    leaves the value unchanged, rather than assigning None - which would
-    append None to List values and overwrite Filldown memory.
+    Groups that did not participate in the match leave the value unchanged.
 
     Args:
       matched: (regexp.match) Named group for each matched value.
       value: (str) The matched value.
     """
     self._value = self._GetValue(value)
-    matched_value = matched.group(value)
-    if self._value is not None and matched_value is not None:
-      self._value.AssignVar(matched_value)
+    if self._value is not None:
+      self._value.AssignVar(matched.group(value))
 
   def _Operations(self, rule, line):
     """Operators on the data record.
