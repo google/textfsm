@@ -905,7 +905,7 @@ class TextTable(object):
     Raises:
       TableError: If specified label is not a column header of the table.
     """
-    label_list = label_list or self._Header()[0]
+    label_list = label_list or [self._Header()[0]]
     # Ensure all labels are valid.
     for label in label_list:
       if label not in self._Header():
