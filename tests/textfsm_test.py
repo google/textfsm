@@ -81,13 +81,12 @@ class UnitTestFSM(unittest.TestCase):
         textfsm.TextFSMTemplateError, v.Parse, 'Value Required beer'
     )
 
-    # A backslash in the value name is no longer processed as a backslash
-    # escape by the re.sub() replacement (raw re.PatternError); the
-    # template is now the literal expansion, and using such a name in a
-    # rule reports a clean template error instead.
+    # A backslash in the value name is rejected at name-check time.
     v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
-    v.Parse(r'Value beer\ol1 (\S+)')
-    self.assertEqual(v.template, r'(?P<beer\ol1>\S+)')
+    self.assertRaises(
+        textfsm.TextFSMTemplateError, v.Parse, r'Value beer\ol1 (\S+)'
+    )
+
     tplt = 'Value beer\\ol1 (\\S+)\n\nStart\n  ^$beer\\ol1x -> Next\n'
     self.assertRaises(
         textfsm.TextFSMTemplateError, textfsm.TextFSM, io.StringIO(tplt)

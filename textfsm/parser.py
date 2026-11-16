@@ -300,7 +300,7 @@ class TextFSMValue(object):
       self.name = value_line[1]
       self.regex = ' '.join(value_line[2:])
 
-    if len(self.name) > self.max_name_len:
+    if len(self.name) > self.max_name_len or '\\' in self.name:
       raise TextFSMTemplateError(
           "Invalid Value name '%s' or name too long." % self.name
       )
@@ -319,11 +319,7 @@ class TextFSMValue(object):
     except re.error as exc:
       raise TextFSMTemplateError(str(exc)) from exc
 
-    # A callable replacement, so that the value name is not interpreted
-    # for backslash escapes (or group references) by re.sub().
-    self.template = re.sub(
-        r'^\(', lambda match: '(?P<%s>' % self.name, self.regex
-    )
+    self.template = '(?P<%s>%s' % (self.name, self.regex[1:])
 
     # Compile and store the regex object only on List-type values for use in
     # nested matching
