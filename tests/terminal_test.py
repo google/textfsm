@@ -17,6 +17,8 @@
 
 """Unittest for terminal module."""
 
+import contextlib
+import io
 import sys
 import unittest
 
@@ -238,6 +240,17 @@ class PagerTest(unittest.TestCase):
     self.p.Page()
     self.assertEqual(self._output.Show().splitlines()[:-self._prompt_lines],
                      buffer.splitlines())
+
+
+
+class UnitTestMain(unittest.TestCase):
+
+  def testHelp(self):
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+      self.assertEqual(0, terminal.main(['terminal', '--help']))
+    self.assertIn('terminal [--help] [--size] [--nodelay] [input_file]',
+                  out.getvalue())
 
 
 if __name__ == '__main__':

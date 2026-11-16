@@ -17,6 +17,7 @@
 
 """Unittest for textfsm module."""
 
+import contextlib
 import io
 import unittest
 
@@ -1009,6 +1010,18 @@ State1
     f = io.StringIO(buf)
     t = textfsm.TextFSM(f)
     self.assertEqual(str(t), buf_result)
+
+
+
+class UnitTestMain(unittest.TestCase):
+
+  def testHelp(self):
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+      self.assertEqual(0, textfsm.parser.main(['textfsm', '--help']))
+    self.assertIn(
+        'textfsm [--help] template [input_file [output_file]]', out.getvalue()
+    )
 
 
 if __name__ == '__main__':

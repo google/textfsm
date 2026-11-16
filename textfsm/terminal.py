@@ -508,6 +508,8 @@ def main(argv=None):
   if argv is None:
     argv = sys.argv
 
+  help_msg = '%s [--help] [--size] [--nodelay] [input_file]\n' % argv[0]
+
   try:
     opts, args = getopt.getopt(argv[1:], 'dhs', ['nodelay', 'help', 'size'])
   except getopt.error as exc:
@@ -543,7 +545,6 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-  help_msg = '%s [--help] [--size] [--nodelay] [input_file]\n' % sys.argv[0]
   try:
     sys.exit(main())
   except UsageError as err:
