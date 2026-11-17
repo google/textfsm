@@ -76,6 +76,15 @@ class UnitTestFSM(unittest.TestCase):
         textfsm.TextFSMTemplateError, v.Parse, r'Value beer (boo)hoo\)'
     )
 
+    # An escaped backslash before the closing parenthesis is allowed.
+    v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
+    v.Parse(r'Value beer (boo\\)')
+    self.assertEqual(v.regex, r'(boo\\)')
+    self.assertEqual(v.template, r'(?P<beer>boo\\)')
+    self.assertRaises(
+        textfsm.TextFSMTemplateError, v.Parse, r'Value beer (boo)hoo\\\)'
+    )
+
     # A missing regex is a template error, not an IndexError.
     v = textfsm.TextFSMValue(options_class=textfsm.TextFSMOptions)
     self.assertRaises(
