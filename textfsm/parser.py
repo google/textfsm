@@ -305,11 +305,13 @@ class TextFSMValue(object):
           "Invalid Value name '%s' or name too long." % self.name
       )
 
+    # An odd number of backslashes before the final ')' means it is escaped.
+    backslashes = len(self.regex[:-1]) - len(self.regex[:-1].rstrip('\\'))
     if (
         not self.regex
         or self.regex[0] != '('
         or self.regex[-1] != ')'
-        or self.regex[-2] == '\\'
+        or backslashes % 2
     ):
       raise TextFSMTemplateError(
           "Value '%s' must be contained within a '()' pair." % self.regex
