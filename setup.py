@@ -54,7 +54,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Topic :: Software Development :: Libraries',
     ],
-    packages=find_packages(),
+    packages=find_packages(include=['textfsm', 'textfsm.*']),
     entry_points={'console_scripts': ['textfsm=textfsm.parser:main']},
     include_package_data=True,
     package_data={'textfsm': ['../testdata/*']},
